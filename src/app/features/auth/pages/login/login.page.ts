@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -10,7 +10,7 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./login.page.scss'],
   standalone: false,
 })
-export class LoginPage implements OnInit {
+export class LoginPage {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -25,26 +25,8 @@ export class LoginPage implements OnInit {
     }),
   });
 
-  readonly isFirstAccess = signal(false);
-  readonly isCheckingInitialAccess = signal(true);
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal('');
-
-  ngOnInit(): void {
-    void this.checkInitialAccess();
-  }
-
-  private async checkInitialAccess(): Promise<void> {
-    try {
-      this.isFirstAccess.set(!(await this.auth.hasAccounts()));
-    } catch {
-      this.errorMessage.set(
-        'No se pudo comprobar el acceso inicial. Inténtalo de nuevo.',
-      );
-    } finally {
-      this.isCheckingInitialAccess.set(false);
-    }
-  }
 
   async submit(): Promise<void> {
     this.form.markAllAsTouched();

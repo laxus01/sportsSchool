@@ -22,12 +22,14 @@ export class LoginPageGuard implements CanActivate {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  canActivate(): boolean | UrlTree {
+  async canActivate(): Promise<boolean | UrlTree> {
     if (this.auth.isAuthenticated) {
       return this.router.parseUrl('/home');
     }
 
-    return true;
+    return (await this.auth.hasAccounts())
+      ? true
+      : this.router.parseUrl('/auth/setup');
   }
 }
 
