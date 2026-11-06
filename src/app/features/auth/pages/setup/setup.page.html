@@ -49,7 +49,11 @@
                 formControlName="password"
                 type="password"
                 autocomplete="new-password"
-              ></ion-input>
+              >
+                <ion-input-password-toggle
+                  slot="end"
+                ></ion-input-password-toggle>
+              </ion-input>
               <p class="field-hint">Usa al menos 8 caracteres.</p>
             </div>
 
@@ -61,7 +65,11 @@
                 formControlName="confirmPassword"
                 type="password"
                 autocomplete="new-password"
-              ></ion-input>
+              >
+                <ion-input-password-toggle
+                  slot="end"
+                ></ion-input-password-toggle>
+              </ion-input>
               @if (
                 form.controls.confirmPassword.touched &&
                 form.hasError('passwordMismatch')

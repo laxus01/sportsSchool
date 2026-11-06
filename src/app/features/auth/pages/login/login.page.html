@@ -44,7 +44,11 @@
                 type="password"
                 autocomplete="current-password"
                 errorText="Ingresa tu contraseña"
-              ></ion-input>
+              >
+                <ion-input-password-toggle
+                  slot="end"
+                ></ion-input-password-toggle>
+              </ion-input>
             </div>
 
             @if (errorMessage()) {
