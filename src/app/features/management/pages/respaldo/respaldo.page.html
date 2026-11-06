@@ -1,0 +1,307 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/home"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver al panel"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>Respaldo y recuperación</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <main class="backup-shell">
+    <header class="backup-heading">
+      <p class="section-kicker">ADMINISTRACIÓN</p>
+      <h1>Respaldo y recuperación</h1>
+      <p>
+        Crea copias cifradas de tu información para guardarlas fuera del
+        dispositivo y restaúralas cuando lo necesites.
+      </p>
+    </header>
+
+    @if (!isSupported) {
+      <section class="backup-card app-card" aria-live="polite">
+        <p class="app-muted">
+          El respaldo cifrado solo está disponible en la aplicación Android.
+        </p>
+      </section>
+    } @else {
+      <ion-accordion-group class="backup-accordions">
+        <ion-accordion value="create" class="app-card backup-accordion">
+          <ion-item
+            slot="header"
+            lines="none"
+            class="backup-accordion-header"
+          >
+            <div class="backup-section-heading">
+              <h2>Crear respaldo</h2>
+              <p>
+                Genera un archivo ZIP cifrado con toda la información. Elige una
+                contraseña: la necesitarás para restaurar en este u otro
+                dispositivo.
+              </p>
+            </div>
+          </ion-item>
+
+          <form
+            slot="content"
+            class="backup-accordion-content"
+            [formGroup]="backupForm"
+            (ngSubmit)="createBackup()"
+          >
+            <div class="field-group">
+              <ion-input
+                label="Contraseña del respaldo"
+                labelPlacement="stacked"
+                fill="outline"
+                formControlName="password"
+                type="password"
+                autocomplete="new-password"
+                [helperText]="'Mínimo ' + minPasswordLength + ' caracteres.'"
+                errorText="Ingresa una contraseña válida"
+              >
+                <ion-input-password-toggle
+                  slot="end"
+                ></ion-input-password-toggle>
+              </ion-input>
+            </div>
+
+            <div class="field-group">
+              <ion-input
+                label="Confirmar contraseña"
+                labelPlacement="stacked"
+                fill="outline"
+                formControlName="confirm"
+                type="password"
+                autocomplete="new-password"
+                errorText="Las contraseñas no coinciden"
+              >
+                <ion-input-password-toggle
+                  slot="end"
+                ></ion-input-password-toggle>
+              </ion-input>
+            </div>
+
+            @if (backupForm.hasError('passwordMismatch') && backupForm.touched) {
+              <p class="form-error" role="alert">Las contraseñas no coinciden.</p>
+            }
+
+            @if (isCreating()) {
+              <ion-progress-bar type="indeterminate"></ion-progress-bar>
+            }
+
+            @if (backupError()) {
+              <p class="form-error" role="alert">{{ backupError() }}</p>
+            }
+            @if (backupSuccess()) {
+              <p class="form-success" role="status">{{ backupSuccess() }}</p>
+            }
+
+            <ion-button
+              type="submit"
+              [disabled]="isCreating() || backupBusy()"
+            >
+              {{ isCreating() ? 'Creando respaldo…' : 'Crear respaldo cifrado' }}
+            </ion-button>
+          </form>
+        </ion-accordion>
+
+        <ion-accordion value="share" class="app-card backup-accordion">
+          <ion-item
+            slot="header"
+            lines="none"
+            class="backup-accordion-header"
+          >
+            <div class="backup-section-heading">
+              <h2>Compartir respaldo</h2>
+              <p>
+                Envía el último respaldo por WhatsApp, correo o Drive. El envío
+                depende de la aplicación que elijas.
+              </p>
+            </div>
+          </ion-item>
+
+          <div slot="content" class="backup-accordion-content">
+            @if (lastBackup(); as last) {
+              <div class="backup-file-info">
+                <p class="backup-file-name">{{ last.fileName }}</p>
+                <p class="app-muted">
+                  {{ formatDate(last.createdAt) }} · {{ formatSize(last.size) }}
+                </p>
+              </div>
+              <ion-button
+                type="button"
+                fill="outline"
+                [disabled]="isSharing()"
+                (click)="shareLastBackup()"
+              >
+                {{ isSharing() ? 'Abriendo…' : 'Compartir respaldo' }}
+              </ion-button>
+            } @else {
+              <p class="app-muted">
+                Aún no has creado un respaldo en este dispositivo.
+              </p>
+            }
+          </div>
+        </ion-accordion>
+
+        <ion-accordion value="restore" class="app-card backup-accordion">
+          <ion-item
+            slot="header"
+            lines="none"
+            class="backup-accordion-header"
+          >
+            <div class="backup-section-heading">
+              <h2>Restaurar respaldo</h2>
+              <p>
+                Selecciona un archivo de respaldo recibido desde otro
+                dispositivo. Los datos actuales serán reemplazados por completo.
+              </p>
+            </div>
+          </ion-item>
+
+          <form
+            slot="content"
+            class="backup-accordion-content"
+            [formGroup]="restoreForm"
+            (ngSubmit)="askToRestore()"
+          >
+            <input
+              #filePicker
+              type="file"
+              accept=".zip,application/zip"
+              hidden
+              (change)="onFilePicked($event)"
+            />
+
+            <ion-button
+              type="button"
+              fill="outline"
+              [disabled]="isValidating() || isRestoring()"
+              (click)="filePicker.click()"
+            >
+              {{ isValidating() ? 'Validando archivo…' : 'Seleccionar archivo' }}
+            </ion-button>
+
+            @if (selectedFile(); as file) {
+              <div class="backup-file-info">
+                <p class="backup-file-name">{{ file.name }}</p>
+              </div>
+            }
+
+            @if (validatedManifest(); as manifest) {
+              <div class="backup-file-info">
+                <p class="app-muted">
+                  Creado: {{ formatDate(manifest.createdAt) }} ·
+                  App {{ manifest.applicationVersion }} ·
+                  Base v{{ manifest.databaseVersion }}
+                </p>
+              </div>
+
+              <div class="field-group">
+                <ion-input
+                  label="Contraseña del respaldo"
+                  labelPlacement="stacked"
+                  fill="outline"
+                  formControlName="password"
+                  type="password"
+                  autocomplete="off"
+                  errorText="Ingresa la contraseña del respaldo"
+                >
+                  <ion-input-password-toggle
+                    slot="end"
+                  ></ion-input-password-toggle>
+                </ion-input>
+              </div>
+
+              <p class="form-error" role="alert">
+                Atención: restaurar reemplazará toda la información actual de la
+                aplicación.
+              </p>
+
+              <div class="backup-restore-actions">
+                <ion-button
+                  type="button"
+                  fill="clear"
+                  [disabled]="isRestoring()"
+                  (click)="cancelRestore()"
+                >
+                  Cancelar
+                </ion-button>
+                <ion-button
+                  type="submit"
+                  color="danger"
+                  [disabled]="isRestoring() || restoreBusy()"
+                >
+                  {{ isRestoring() ? 'Restaurando…' : 'Restaurar' }}
+                </ion-button>
+              </div>
+            }
+
+            @if (isRestoring()) {
+              <ion-progress-bar type="indeterminate"></ion-progress-bar>
+            }
+
+            @if (restoreError()) {
+              <p class="form-error" role="alert">{{ restoreError() }}</p>
+            }
+            @if (restoreSuccess()) {
+              <p class="form-success" role="status">{{ restoreSuccess() }}</p>
+            }
+          </form>
+        </ion-accordion>
+
+        <ion-accordion value="history" class="app-card backup-accordion">
+          <ion-item
+            slot="header"
+            lines="none"
+            class="backup-accordion-header"
+          >
+            <div class="backup-section-heading">
+              <h2>Historial</h2>
+            </div>
+          </ion-item>
+
+          <div slot="content" class="backup-accordion-content">
+            @if (historyEntries().length === 0) {
+              <p class="app-muted">Todavía no hay operaciones registradas.</p>
+            } @else {
+              <ion-list lines="none" class="backup-history-list">
+                @for (entry of historyEntries(); track entry.id) {
+                  <ion-item>
+                    <ion-label>
+                      <h3>
+                        {{ entry.type === 'backup' ? 'Respaldo' : 'Restauración' }}
+                        · {{ entry.fileName }}
+                      </h3>
+                      <p>
+                        {{ formatDate(entry.date) }}
+                        {{ entry.size ? ' · ' + formatSize(entry.size) : '' }}
+                        · {{ entry.status === 'success' ? 'Exitosa' : 'Fallida' }}
+                      </p>
+                      @if (entry.message) {
+                        <p>{{ entry.message }}</p>
+                      }
+                    </ion-label>
+                  </ion-item>
+                }
+              </ion-list>
+            }
+          </div>
+        </ion-accordion>
+      </ion-accordion-group>
+    }
+  </main>
+</ion-content>
+
+<ion-alert
+  [isOpen]="isConfirmAlertOpen()"
+  header="Confirmar restauración"
+  message="Se reemplazará toda la información actual con el contenido del respaldo. Esta acción no se puede deshacer desde la app, aunque se creará una copia preventiva automática."
+  [buttons]="confirmAlertButtons"
+  (didDismiss)="isConfirmAlertOpen.set(false)"
+></ion-alert>

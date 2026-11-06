@@ -103,32 +103,6 @@
           ></ion-input>
         </section>
 
-        @if (isDemoDataAvailable()) {
-          <section class="billing-settings">
-            <div class="school-form-heading">
-              <h2>Escuela ficticia para probar pagos</h2>
-              <p>
-                Carga una escuela demo con 4 deportistas y escenarios de
-                mensualidad completa, abono parcial, inscripción pagada y un
-                cargo pendiente para practicar la generación.
-              </p>
-              <p>
-                Solo está disponible cuando la base está vacía. No reemplaza
-                datos existentes.
-              </p>
-            </div>
-            <ion-button
-              type="button"
-              fill="outline"
-              color="secondary"
-              [disabled]="isSeedingDemo()"
-              (click)="askToLoadDemoData()"
-            >
-              {{ isSeedingDemo() ? 'Cargando datos demo…' : 'Cargar escuela demo' }}
-            </ion-button>
-          </section>
-        }
-
         @if (errorMessage()) {
           <p class="form-error" role="alert">{{ errorMessage() }}</p>
         }
@@ -136,25 +110,6 @@
         @if (successMessage()) {
           <p class="form-success" role="status">{{ successMessage() }}</p>
         }
-
-        <section class="backup-section">
-          <div class="school-form-heading">
-            <h2>Respaldo local</h2>
-            <p>
-              Exporta una copia completa de la información para guardarla fuera
-              del dispositivo. El archivo contiene datos personales y
-              financieros; guárdalo en un lugar seguro.
-            </p>
-          </div>
-          <ion-button
-            type="button"
-            fill="outline"
-            [disabled]="isExportingBackup()"
-            (click)="exportBackup()"
-          >
-            {{ isExportingBackup() ? 'Preparando respaldo…' : 'Exportar respaldo' }}
-          </ion-button>
-        </section>
 
         <div class="school-actions">
           <ion-button
@@ -177,11 +132,3 @@
     }
   </main>
 </ion-content>
-
-<ion-alert
-  [isOpen]="isDemoSeedAlertOpen()"
-  header="Cargar escuela demo"
-  message="Se agregarán datos ficticios de escuela, acudientes, deportistas, mensualidades y pagos a esta base local vacía. ¿Quieres continuar?"
-  [buttons]="demoSeedAlertButtons"
-  (didDismiss)="isDemoSeedAlertOpen.set(false)"
-></ion-alert>

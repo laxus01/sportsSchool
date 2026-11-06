@@ -69,15 +69,6 @@ describe('GastosPage', () => {
     );
   });
 
-  it('shows preview expenses in development without inserting them', async () => {
-    await fixture.componentInstance.ionViewWillEnter();
-
-    expect(fixture.componentInstance.showingDemoExpenses()).toBe(true);
-    expect(fixture.componentInstance.expenses()).toHaveLength(4);
-    expect(fixture.componentInstance.expenses()[0].monto_pesos).toBe(180000);
-    expect(run).not.toHaveBeenCalled();
-  });
-
   it('opens a clean form and saves the expense', async () => {
     const page = fixture.componentInstance;
     page.form.setValue({

@@ -3,7 +3,6 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { DatabaseService } from '../../../../database/database.service';
-import { seedDemoPaymentData } from '../../../../database/demo-payment-data';
 import { AuthService } from '../../../auth/services/auth.service';
 
 interface SchoolProfileRow {
@@ -60,22 +59,8 @@ export class SchoolPage implements OnInit {
 
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
-  readonly isExportingBackup = signal(false);
-  readonly isDemoDataAvailable = signal(false);
-  readonly isDemoSeedAlertOpen = signal(false);
-  readonly isSeedingDemo = signal(false);
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
-  readonly demoSeedAlertButtons = [
-    { text: 'Cancelar', role: 'cancel' },
-    {
-      text: 'Cargar datos demo',
-      role: 'confirm',
-      handler: () => {
-        void this.loadDemoData();
-      },
-    },
-  ];
 
   ngOnInit(): void {
     void this.loadSchool();
@@ -189,87 +174,6 @@ export class SchoolPage implements OnInit {
     }
   }
 
-  async exportBackup(): Promise<void> {
-    if (this.isExportingBackup()) {
-      return;
-    }
-    this.isExportingBackup.set(true);
-    this.errorMessage.set('');
-    this.successMessage.set('');
-    try {
-      const content = await this.database.exportBackupJson();
-      const fileName = `sports-school-backup-${new Date()
-        .toISOString()
-        .slice(0, 10)}.json`;
-      const file = new File([content], fileName, {
-        type: 'application/json',
-      });
-      const shareNavigator = navigator as Navigator & {
-        canShare?: (data: ShareData) => boolean;
-        share?: (data: ShareData) => Promise<void>;
-      };
-
-      if (
-        shareNavigator.share &&
-        shareNavigator.canShare?.({ files: [file] })
-      ) {
-        await shareNavigator.share({
-          files: [file],
-          title: 'Respaldo de Sports School',
-        });
-      } else {
-        const url = URL.createObjectURL(file);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.click();
-        URL.revokeObjectURL(url);
-      }
-      this.successMessage.set('Se exportó el respaldo de la base de datos.');
-    } catch {
-      this.errorMessage.set(
-        'No se pudo exportar el respaldo. Inténtalo de nuevo.',
-      );
-    } finally {
-      this.isExportingBackup.set(false);
-    }
-  }
-
-  askToLoadDemoData(): void {
-    this.isDemoSeedAlertOpen.set(true);
-  }
-
-  async loadDemoData(): Promise<void> {
-    if (this.isSeedingDemo()) {
-      return;
-    }
-    this.isDemoSeedAlertOpen.set(false);
-    this.isSeedingDemo.set(true);
-    this.errorMessage.set('');
-    this.successMessage.set('');
-    try {
-      const database = await this.database.getConnection();
-      await seedDemoPaymentData(
-        database,
-        this.auth.currentUsername ?? 'demo',
-      );
-      this.isDemoDataAvailable.set(false);
-      this.successMessage.set(
-        'Se cargaron los datos ficticios. Te llevaremos a Pagos para probarlos.',
-      );
-      await this.router.navigateByUrl('/gestion/pagos');
-    } catch (error) {
-      this.errorMessage.set(
-        String(error).includes('DEMO_REQUIRES_EMPTY_DATABASE')
-          ? 'Los datos demo solo se pueden cargar en una base vacía. No se modificó la información existente.'
-          : 'No se pudieron cargar los datos demo.',
-      );
-      await this.refreshDemoAvailability();
-    } finally {
-      this.isSeedingDemo.set(false);
-    }
-  }
-
   backToHome(): Promise<boolean> {
     return this.router.navigateByUrl('/home');
   }
@@ -286,7 +190,6 @@ export class SchoolPage implements OnInit {
          WHERE id = 1
          LIMIT 1`,
       );
-      await this.refreshDemoAvailability(database);
       const school = result.values?.[0] as SchoolProfileRow | undefined;
 
       if (school) {
@@ -308,29 +211,6 @@ export class SchoolPage implements OnInit {
       );
     } finally {
       this.isLoading.set(false);
-    }
-  }
-
-  private async refreshDemoAvailability(
-    database?: Awaited<ReturnType<DatabaseService['getConnection']>>,
-  ): Promise<void> {
-    try {
-      const connection = database ?? (await this.database.getConnection());
-      const result = await connection.query(
-        `SELECT
-           (SELECT COUNT(*) FROM escuela)
-           + (SELECT COUNT(*) FROM categorias)
-           + (SELECT COUNT(*) FROM deportistas)
-           + (SELECT COUNT(*) FROM acudientes)
-           + (SELECT COUNT(*) FROM pagos)
-           + (SELECT COUNT(*) FROM mensualidades)
-           + (SELECT COUNT(*) FROM inscripciones) AS total`,
-      );
-      this.isDemoDataAvailable.set(
-        Number(result.values?.[0]?.['total'] ?? 0) === 0,
-      );
-    } catch {
-      this.isDemoDataAvailable.set(false);
     }
   }
 }

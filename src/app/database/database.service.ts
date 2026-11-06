@@ -103,15 +103,6 @@ export class DatabaseService {
     return this.initialize();
   }
 
-  async exportBackupJson(): Promise<string> {
-    const database = await this.getConnection();
-    if (Capacitor.getPlatform() === 'web') {
-      await this.sqlite.saveToStore(DATABASE_NAME);
-    }
-    const backup = await database.exportToJson('full');
-    return JSON.stringify(backup, null, 2);
-  }
-
   private async initializeDatabase(): Promise<SQLiteDBConnection> {
     const isWeb = Capacitor.getPlatform() === 'web';
 

@@ -1,4 +1,5 @@
 import {
+  archiveOutline,
   businessOutline,
   cashOutline,
   cardOutline,
@@ -93,6 +94,14 @@ export const MANAGEMENT_SECTIONS: readonly ManagementSection[] = [
     description: 'Datos generales y valor de inscripción vigente.',
     icon: businessOutline,
     recordsLabel: 'datos de escuela',
+  },
+  {
+    id: 'respaldo',
+    group: 'Administración',
+    title: 'Respaldo y recuperación',
+    description: 'Copias cifradas de la información y restauración.',
+    icon: archiveOutline,
+    recordsLabel: 'respaldos',
   },
   {
     id: 'medios-de-pago',

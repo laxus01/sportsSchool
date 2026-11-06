@@ -28,12 +28,13 @@ describe('HomePage', () => {
     ) as NodeListOf<HTMLAnchorElement>;
     const destinations = Array.from(cards).map((card) => card.getAttribute('href'));
 
-    expect(cards.length).toBe(8);
+    expect(cards.length).toBe(9);
     expect(destinations).toContain('/gestion/deportistas');
     expect(destinations).toContain('/gestion/acudientes');
     expect(destinations).toContain('/gestion/pagos');
     expect(destinations).toContain('/gestion/gastos');
     expect(destinations).toContain('/gestion/resumen-finanzas');
+    expect(destinations).toContain('/gestion/respaldo');
     expect(destinations).not.toContain('/gestion/mensualidades');
     expect(destinations).not.toContain('/gestion/inscripciones');
   });

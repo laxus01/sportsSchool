@@ -9,7 +9,6 @@ import {
 } from 'ionicons/icons';
 
 import { DatabaseService } from '../../../../database/database.service';
-import { environment } from '../../../../../environments/environment';
 
 interface ExpenseRecord {
   id: string;
@@ -25,38 +24,6 @@ const localDateString = (date = new Date()): string => {
   return `${year}-${month}-${day}`;
 };
 
-const offsetDate = (days: number): string => {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return localDateString(date);
-};
-
-const PREVIEW_EXPENSES: ExpenseRecord[] = [
-  {
-    id: 'preview-expense-field',
-    fecha: offsetDate(0),
-    descripcion: 'Alquiler de cancha para entrenamiento',
-    monto_pesos: 180000,
-  },
-  {
-    id: 'preview-expense-balls',
-    fecha: offsetDate(-1),
-    descripcion: 'Compra de balones y material deportivo',
-    monto_pesos: 245000,
-  },
-  {
-    id: 'preview-expense-water',
-    fecha: offsetDate(-3),
-    descripcion: 'Hidratación para jornada de entrenamiento',
-    monto_pesos: 48000,
-  },
-  {
-    id: 'preview-expense-maintenance',
-    fecha: offsetDate(-6),
-    descripcion: 'Mantenimiento de conos y petos',
-    monto_pesos: 75000,
-  },
-];
 
 @Component({
   selector: 'app-gastos',
@@ -76,7 +43,7 @@ export class GastosPage {
   };
   readonly today = localDateString();
   readonly expenses = signal<ExpenseRecord[]>([]);
-  readonly showingDemoExpenses = signal(false);
+
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
   readonly isModalOpen = signal(false);
@@ -257,11 +224,8 @@ export class GastosPage {
          ORDER BY fecha DESC, creado_en DESC`,
       );
       const records = (result.values ?? []) as ExpenseRecord[];
-      const shouldShowPreview = !environment.production && records.length === 0;
-      this.showingDemoExpenses.set(shouldShowPreview);
-      this.expenses.set(shouldShowPreview ? PREVIEW_EXPENSES : records);
+      this.expenses.set(records);
     } catch {
-      this.showingDemoExpenses.set(false);
       this.pageError.set('No se pudieron cargar los gastos.');
     } finally {
       this.isLoading.set(false);

@@ -1,0 +1,112 @@
+.backup-shell {
+  width: min(100% - 2rem, 48rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 3rem) 0;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.backup-heading {
+  margin-bottom: 0.25rem;
+}
+
+.section-kicker {
+  margin: 0 0 0.45rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.backup-heading h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.backup-heading > p:last-child,
+.backup-section-heading > p {
+  margin: 0.5rem 0 0;
+  color: var(--app-muted);
+  line-height: 1.55;
+}
+
+.backup-card {
+  display: grid;
+  gap: 1.1rem;
+  padding: clamp(1.25rem, 5vw, 2rem);
+}
+
+.backup-accordions {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.backup-accordion {
+  --ion-background-color: var(--app-surface);
+}
+
+.backup-accordion-header {
+  --background: var(--app-surface);
+  --color: var(--app-text);
+  --min-height: auto;
+  --padding-top: clamp(1rem, 4vw, 1.5rem);
+  --padding-bottom: clamp(1rem, 4vw, 1.5rem);
+  --padding-start: clamp(1.25rem, 5vw, 2rem);
+  --padding-end: 0;
+  --inner-padding-top: 0;
+  --inner-padding-bottom: 0;
+  --inner-padding-end: clamp(1.25rem, 5vw, 2rem);
+}
+
+.backup-accordion-header .backup-section-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.backup-accordion-header .ion-accordion-toggle-icon {
+  margin-inline-start: 1rem;
+  color: var(--app-muted);
+  font-size: 1.3rem;
+}
+
+.backup-accordion-content {
+  display: grid;
+  gap: 1.1rem;
+  padding: 0 clamp(1.25rem, 5vw, 2rem) clamp(1.25rem, 5vw, 2rem);
+}
+
+.backup-section-heading h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.backup-file-info {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.backup-file-info p {
+  margin: 0;
+}
+
+.backup-file-name {
+  color: var(--app-text);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.backup-restore-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.backup-history-list {
+  background: transparent;
+}

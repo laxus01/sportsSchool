@@ -46,11 +46,6 @@
         <p class="app-muted">Selecciona «Nuevo» para registrar el primer gasto.</p>
       </section>
     } @else {
-      @if (showingDemoExpenses()) {
-        <p class="app-muted" role="note">
-          Datos de ejemplo para previsualizar la vista; no están guardados.
-        </p>
-      }
       <div class="expense-list">
         @for (expense of expenses(); track expense.id) {
           <article class="expense-card app-card">
@@ -65,8 +60,7 @@
                   {{ formatAmount(expense.monto_pesos) }}
                 </strong>
               </div>
-              @if (!showingDemoExpenses()) {
-                <div class="record-actions">
+              <div class="record-actions">
                   <ion-button
                     type="button"
                     fill="clear"
@@ -88,8 +82,7 @@
                     <ion-icon slot="start" [icon]="icons.trashOutline"></ion-icon>
                     Eliminar
                   </ion-button>
-                </div>
-              }
+              </div>
             </div>
           </article>
         }

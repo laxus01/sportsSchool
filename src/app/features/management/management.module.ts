@@ -15,6 +15,7 @@ import { ManagementPage } from './management.page';
 import { MedioPagoFormPage } from './pages/medios-pago/medio-pago-form.page';
 import { MediosPagoPage } from './pages/medios-pago/medios-pago.page';
 import { PagosPage } from './pages/pagos/pagos.page';
+import { RespaldoPage } from './pages/respaldo/respaldo.page';
 import { SchoolPage } from './pages/school/school.page';
 import { GastosPage } from './pages/gastos/gastos.page';
 import { ResumenFinanzasPage } from './pages/resumen-finanzas/resumen-finanzas.page';
@@ -32,6 +33,7 @@ import { ResumenFinanzasPage } from './pages/resumen-finanzas/resumen-finanzas.p
     MediosPagoPage,
     MedioPagoFormPage,
     PagosPage,
+    RespaldoPage,
     SchoolPage,
     GastosPage,
     ResumenFinanzasPage,
