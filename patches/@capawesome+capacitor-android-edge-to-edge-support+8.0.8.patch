@@ -1,0 +1,17 @@
+diff --git a/node_modules/@capawesome/capacitor-android-edge-to-edge-support/android/src/main/java/io/capawesome/capacitorjs/plugins/androidedgetoedgesupport/EdgeToEdge.java b/node_modules/@capawesome/capacitor-android-edge-to-edge-support/android/src/main/java/io/capawesome/capacitorjs/plugins/androidedgetoedgesupport/EdgeToEdge.java
+index a82c10f..c339726 100644
+--- a/node_modules/@capawesome/capacitor-android-edge-to-edge-support/android/src/main/java/io/capawesome/capacitorjs/plugins/androidedgetoedgesupport/EdgeToEdge.java
++++ b/node_modules/@capawesome/capacitor-android-edge-to-edge-support/android/src/main/java/io/capawesome/capacitorjs/plugins/androidedgetoedgesupport/EdgeToEdge.java
+@@ -91,10 +91,8 @@ public class EdgeToEdge {
+     private void applyInsetsInternal(View view, WindowInsetsCompat currentInsets) {
+         Insets systemBarsInsets = currentInsets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+         Insets imeInsets = currentInsets.getInsets(WindowInsetsCompat.Type.ime());
+-        boolean keyboardVisible = currentInsets.isVisible(WindowInsetsCompat.Type.ime());
+-        // When keyboard is visible, don't apply bottom margin to avoid double-counting
+-        // (the system already resizes the window for the keyboard)
+-        int bottomMargin = keyboardVisible ? 0 : Math.max(imeInsets.bottom, systemBarsInsets.bottom);
++        // keyboardVisible check removed: on Android 15+ edge-to-edge the system does NOT resize the window for the IME, so the bottom margin must always include the keyboard inset.
++        int bottomMargin = Math.max(imeInsets.bottom, systemBarsInsets.bottom);
+ 
+         ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+         mlp.bottomMargin = bottomMargin;
