@@ -193,7 +193,11 @@ export class DatabaseService {
       await database.beginTransaction();
       try {
         for (const statement of migration.statements) {
-          await database.execute(statement, false);
+          if (statement.trimStart().toUpperCase().startsWith('CREATE TRIGGER')) {
+            await database.run(statement, [], false);
+          } else {
+            await database.execute(statement, false);
+          }
         }
         await database.run(
           'INSERT INTO schema_migrations (version) VALUES (?)',
