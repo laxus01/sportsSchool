@@ -1,0 +1,187 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/home"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver al panel"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>Escuela</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <main class="school-shell">
+    <header class="school-heading">
+      <p class="section-kicker">ADMINISTRACIÓN</p>
+      <h1>Datos de la escuela</h1>
+      <p>Esta información aparecerá en los comprobantes de pago.</p>
+    </header>
+
+    @if (isLoading()) {
+      <section class="school-card app-card" aria-live="polite">
+        <p class="app-muted">Cargando información…</p>
+      </section>
+    } @else {
+      <form class="school-card app-card" [formGroup]="form" (ngSubmit)="save()">
+        <div class="school-form-heading">
+          <h2>Perfil institucional</h2>
+          <p>Completa los datos que identifican oficialmente a tu escuela.</p>
+        </div>
+
+        <div class="field-group">
+          <ion-input
+            label="Nombre de la escuela"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="name"
+            type="text"
+            autocomplete="organization"
+            errorText="Ingresa el nombre de la escuela"
+          ></ion-input>
+        </div>
+
+        <div class="field-group">
+          <ion-input
+            label="NIT"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="nit"
+            type="text"
+            inputmode="text"
+            autocomplete="off"
+            helperText="Puedes incluir el dígito de verificación, por ejemplo 900123456-7."
+            errorText="Ingresa el NIT de la escuela"
+          ></ion-input>
+        </div>
+
+        <div class="field-group">
+          <ion-input
+            label="Nombre del representante"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="representative"
+            type="text"
+            autocomplete="name"
+            errorText="Ingresa el nombre del representante"
+          ></ion-input>
+        </div>
+
+        <section class="billing-settings">
+          <div class="school-form-heading">
+            <h2>Configuración de cobros</h2>
+            <p>
+              Cada escuela define desde cuándo controla pagos. Los cargos no se
+              generarán antes de esa fecha.
+            </p>
+          </div>
+          <app-date-input
+            label="Inicio del control de pagos"
+            formControlName="billingStartDate"
+            errorText="Selecciona la fecha de inicio del control"
+            [invalid]="form.controls.billingStartDate.invalid && form.controls.billingStartDate.touched"
+          ></app-date-input>
+          <app-money-input
+            label="Inscripción para nuevos deportistas (COP)"
+            formControlName="registrationFee"
+            helperText="Los deportistas antiguos no reciben este cobro."
+            errorText="Ingresa un valor entero en pesos"
+            [invalid]="form.controls.registrationFee.invalid && form.controls.registrationFee.touched"
+          ></app-money-input>
+          <ion-input
+            label="Día de vencimiento mensual"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="monthlyDueDay"
+            type="number"
+            min="1"
+            max="31"
+            helperText="Si el mes tiene menos días, se usa su último día."
+            errorText="Elige un día entre 1 y 31"
+          ></ion-input>
+        </section>
+
+        @if (isDemoDataAvailable()) {
+          <section class="billing-settings">
+            <div class="school-form-heading">
+              <h2>Escuela ficticia para probar pagos</h2>
+              <p>
+                Carga una escuela demo con 4 deportistas y escenarios de
+                mensualidad completa, abono parcial, inscripción pagada y un
+                cargo pendiente para practicar la generación.
+              </p>
+              <p>
+                Solo está disponible cuando la base está vacía. No reemplaza
+                datos existentes.
+              </p>
+            </div>
+            <ion-button
+              type="button"
+              fill="outline"
+              color="secondary"
+              [disabled]="isSeedingDemo()"
+              (click)="askToLoadDemoData()"
+            >
+              {{ isSeedingDemo() ? 'Cargando datos demo…' : 'Cargar escuela demo' }}
+            </ion-button>
+          </section>
+        }
+
+        @if (errorMessage()) {
+          <p class="form-error" role="alert">{{ errorMessage() }}</p>
+        }
+
+        @if (successMessage()) {
+          <p class="form-success" role="status">{{ successMessage() }}</p>
+        }
+
+        <section class="backup-section">
+          <div class="school-form-heading">
+            <h2>Respaldo local</h2>
+            <p>
+              Exporta una copia completa de la información para guardarla fuera
+              del dispositivo. El archivo contiene datos personales y
+              financieros; guárdalo en un lugar seguro.
+            </p>
+          </div>
+          <ion-button
+            type="button"
+            fill="outline"
+            [disabled]="isExportingBackup()"
+            (click)="exportBackup()"
+          >
+            {{ isExportingBackup() ? 'Preparando respaldo…' : 'Exportar respaldo' }}
+          </ion-button>
+        </section>
+
+        <div class="school-actions">
+          <ion-button
+            type="button"
+            fill="clear"
+            class="cancel-button"
+            (click)="backToHome()"
+          >
+            Volver
+          </ion-button>
+          <ion-button
+            type="submit"
+            class="save-button"
+            [disabled]="isSaving()"
+          >
+            {{ isSaving() ? 'Guardando…' : 'Guardar información' }}
+          </ion-button>
+        </div>
+      </form>
+    }
+  </main>
+</ion-content>
+
+<ion-alert
+  [isOpen]="isDemoSeedAlertOpen()"
+  header="Cargar escuela demo"
+  message="Se agregarán datos ficticios de escuela, acudientes, deportistas, mensualidades y pagos a esta base local vacía. ¿Quieres continuar?"
+  [buttons]="demoSeedAlertButtons"
+  (didDismiss)="isDemoSeedAlertOpen.set(false)"
+></ion-alert>

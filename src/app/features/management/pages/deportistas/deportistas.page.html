@@ -1,0 +1,242 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/home"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver al panel"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>Deportistas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <ion-fab
+    slot="fixed"
+    vertical="top"
+    horizontal="end"
+    class="athlete-fab"
+  >
+    <ion-fab-button (click)="addAthlete()" aria-label="Agregar deportista">
+      <ion-icon [icon]="addIcon"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <main class="athletes-shell">
+    <header class="page-heading">
+      <div>
+        <p class="section-kicker">PERSONAS</p>
+        <h1>Deportistas</h1>
+        <p>Perfiles, categorías y responsables de tu equipo.</p>
+      </div>
+    </header>
+
+    <ion-searchbar
+      class="athlete-search"
+      placeholder="Buscar por nombre o categoría"
+      aria-label="Buscar deportistas"
+      [value]="searchTerm()"
+      (ionInput)="updateSearch($event)"
+      debounce="150"
+    ></ion-searchbar>
+
+    @if (isLoading()) {
+      <section class="app-card list-state" aria-live="polite">
+        <p class="app-muted">Cargando deportistas…</p>
+      </section>
+    } @else if (errorMessage()) {
+      <section class="app-card list-state" role="alert">
+        <h2>No se pudo abrir la lista</h2>
+        <p>{{ errorMessage() }}</p>
+      </section>
+    } @else if (athletes().length === 0) {
+      <section class="app-card list-state">
+        <span class="empty-icon" aria-hidden="true">
+          <ion-icon [icon]="personIcon"></ion-icon>
+        </span>
+        <h2>Aún no hay deportistas</h2>
+        <p>Registra un perfil para comenzar a organizar tu equipo.</p>
+      </section>
+    } @else if (filteredAthletes().length === 0) {
+      <section class="app-card list-state">
+        <h2>No encontramos coincidencias</h2>
+        <p>Prueba con otro nombre o categoría.</p>
+      </section>
+    } @else {
+      <div class="athlete-grid">
+        @for (athlete of filteredAthletes(); track athlete.id) {
+          <article class="athlete-card app-card">
+            <div class="athlete-photo">
+              @if (athlete.foto_data_url) {
+                <img [src]="athlete.foto_data_url" alt="" />
+              } @else {
+                <ion-icon [icon]="personIcon" aria-hidden="true"></ion-icon>
+              }
+            </div>
+            <div class="athlete-information">
+              <h2>{{ athlete.nombres }} {{ athlete.apellidos }}</h2>
+              <p>{{ athlete.categoria_nombre }}</p>
+              <span>Ingreso a la escuela: {{ formatBirthDate(athlete.fecha_ingreso) }}</span>
+              <span>Fecha de nacimiento: {{ formatBirthDate(athlete.fecha_nacimiento) }}</span>
+              <span>Edad: {{ formatAge(athlete.fecha_nacimiento) }}</span>
+              <div class="athlete-actions">
+                <ion-button
+                  type="button"
+                  fill="clear"
+                  size="small"
+                  (click)="editAthlete(athlete)"
+                  [attr.aria-label]="'Editar ' + athlete.nombres"
+                >
+                  <ion-icon slot="start" [icon]="editIcon"></ion-icon>
+                  Editar
+                </ion-button>
+                <ion-button
+                  type="button"
+                  fill="clear"
+                  color="danger"
+                  size="small"
+                  (click)="openDeleteAthlete(athlete)"
+                  [attr.aria-label]="'Eliminar ' + athlete.nombres"
+                >
+                  <ion-icon slot="start" [icon]="deleteIcon"></ion-icon>
+                  Eliminar
+                </ion-button>
+              </div>
+              <ion-button
+                  type="button"
+                  fill="clear"
+                  color="danger"
+                  size="small"
+                  (click)="openRetirement(athlete)"
+                >
+                  Registrar retiro
+                </ion-button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </main>
+</ion-content>
+
+
+
+
+
+<ion-modal
+  [isOpen]="isRetirementModalOpen()"
+  (didDismiss)="closeDialog()"
+  [backdropDismiss]="!isSaving()"
+>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Registrar retiro</ion-title>
+        <ion-buttons slot="end">
+          <ion-button fill="clear" (click)="closeDialog()" [disabled]="isSaving()">
+            Cerrar
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="app-page">
+      <form
+        class="athlete-dialog app-card"
+        [formGroup]="retirementForm"
+        (ngSubmit)="retireAthlete()"
+      >
+        @if (selectedAthlete(); as athlete) {
+          <p>
+            Registra la fecha efectiva de retiro de
+            {{ athlete.nombres }} {{ athlete.apellidos }}. Sus obligaciones
+            anteriores se conservarán.
+          </p>
+        }
+        <app-date-input
+          label="Fecha efectiva de retiro"
+          formControlName="fechaRetiro"
+          [max]="today"
+          errorText="La fecha no puede estar en el futuro"
+          [invalid]="retirementForm.controls.fechaRetiro.invalid && retirementForm.controls.fechaRetiro.touched"
+        ></app-date-input>
+        @if (modalError()) {
+          <p class="form-error" role="alert">{{ modalError() }}</p>
+        }
+        <ion-button type="submit" color="danger" [disabled]="isSaving()">
+          {{ isSaving() ? 'Guardando…' : 'Confirmar retiro' }}
+        </ion-button>
+      </form>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<ion-modal
+  [isOpen]="isDeleteModalOpen()"
+  (didDismiss)="closeDeleteModal()"
+  [backdropDismiss]="!isDeleting()"
+>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting()"
+            aria-label="Cerrar eliminación"
+          >
+            <ion-icon slot="icon-only" [icon]="backIcon"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+        <ion-title>Eliminar deportista</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="app-page">
+      <section class="confirm-dialog app-card">
+        @if (athleteToDelete(); as athlete) {
+          <p>
+            Vas a eliminar a
+            <strong>{{ athlete.nombres }} {{ athlete.apellidos }}</strong>.
+          </p>
+        }
+        @if (isCheckingDelete()) {
+          <p class="app-muted">Revisando información relacionada…</p>
+        } @else if (deleteBlockReason()) {
+          <p class="form-error" role="alert">{{ deleteBlockReason() }}</p>
+        } @else {
+          <p>
+            Solo se puede eliminar si no tiene obligaciones financieras,
+            acudientes vinculados ni cambios de categoría. Esta acción no se
+            puede deshacer.
+          </p>
+        }
+        @if (deleteError()) {
+          <p class="form-error" role="alert">{{ deleteError() }}</p>
+        }
+        <div class="modal-actions">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting()"
+          >
+            Cancelar
+          </ion-button>
+          @if (!deleteBlockReason()) {
+            <ion-button
+              type="button"
+              color="danger"
+              [disabled]="isDeleting() || isCheckingDelete()"
+              (click)="confirmDeleteAthlete()"
+            >
+              {{ isDeleting() ? 'Eliminando…' : 'Eliminar' }}
+            </ion-button>
+          }
+        </div>
+      </section>
+    </ion-content>
+  </ng-template>
+</ion-modal>

@@ -1,0 +1,52 @@
+.app-date-input {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.app-date-input-label {
+  color: var(--app-text);
+  font-size: 0.9rem;
+}
+
+.app-date-input ion-datetime-button {
+  width: 100%;
+  margin: 0;
+  --background: var(--app-surface);
+  --color: var(--app-text);
+}
+
+.app-date-input ion-datetime-button::part(native) {
+  justify-content: flex-start;
+  min-height: 56px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-control);
+  padding-inline: 1rem;
+}
+
+.app-date-input-help,
+.app-date-input-error {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.app-date-input-help {
+  color: var(--app-muted);
+}
+
+.app-date-input-error {
+  color: var(--app-danger);
+}
+
+.app-date-picker-modal {
+  --width: min(100%, 22rem);
+  --height: auto;
+  --border-radius: var(--app-radius-card);
+}
+
+.app-date-picker-modal ion-datetime {
+  width: 100%;
+  --background: var(--app-surface);
+  --title-color: var(--app-text);
+  --text-color: var(--app-text);
+  color: var(--app-text);
+}

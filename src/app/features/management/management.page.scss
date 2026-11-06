@@ -1,0 +1,87 @@
+.management-shell {
+  width: min(100% - 2rem, 58rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 3rem) 0;
+}
+
+.management-heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.management-icon {
+  display: grid;
+  width: 3.75rem;
+  height: 3.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--app-primary);
+}
+
+.management-icon ion-icon {
+  font-size: 1.75rem;
+}
+
+.section-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.management-heading h1,
+.empty-state h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.management-heading h1 {
+  font-size: clamp(1.75rem, 5vw, 2.4rem);
+}
+
+.management-heading div > p:last-child,
+.empty-state > p:not(.section-kicker) {
+  color: var(--app-muted);
+  line-height: 1.6;
+}
+
+.management-heading div > p:last-child {
+  margin: 0.4rem 0 0;
+}
+
+.empty-state {
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+}
+
+.empty-state h2 {
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+}
+
+.empty-state > p:not(.section-kicker) {
+  max-width: 38rem;
+}
+
+.empty-note {
+  border-left: 3px solid var(--app-primary);
+  padding-left: 0.8rem;
+  font-size: 0.84rem;
+}
+
+.management-loading {
+  padding: 2rem;
+  color: var(--app-muted);
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .management-shell {
+    width: min(100% - 1.5rem, 58rem);
+  }
+}

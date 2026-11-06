@@ -1,0 +1,95 @@
+<ion-content [fullscreen]="true" class="app-page">
+  <div class="auth-layout">
+    <header class="auth-hero">
+      <div class="brand-top">
+        <span class="brand-mark" aria-hidden="true">SS</span>
+        <span class="brand-name">Sports School</span>
+      </div>
+
+      <div class="hero-copy">
+        <p class="brand-overline">PRIMERA JORNADA</p>
+        <h1>Tu escuela, en marcha.</h1>
+        <p>Crea el acceso privado para administrar tu equipo.</p>
+      </div>
+    </header>
+
+    <main class="auth-main">
+      <section class="auth-card app-card">
+        <div class="form-inner">
+          <p class="eyebrow">CONFIGURACIÓN INICIAL</p>
+          <h2>Crea tu acceso</h2>
+          <p class="form-intro">
+            Crea la primera cuenta administradora. No hay credenciales predeterminadas.
+          </p>
+
+          <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+            <div class="field-group">
+              <ion-input
+                label="Usuario"
+                labelPlacement="stacked"
+                fill="outline"
+                formControlName="username"
+                type="text"
+                autocomplete="username"
+                autocapitalize="none"
+                inputmode="text"
+              ></ion-input>
+              @if (form.controls.username.touched && form.controls.username.invalid) {
+                <p class="field-hint field-error">
+                  Usa un usuario de 3 a 50 caracteres.
+                </p>
+              }
+            </div>
+
+            <div class="field-group">
+              <ion-input
+                label="Contraseña"
+                labelPlacement="stacked"
+                fill="outline"
+                formControlName="password"
+                type="password"
+                autocomplete="new-password"
+              ></ion-input>
+              <p class="field-hint">Usa al menos 8 caracteres.</p>
+            </div>
+
+            <div class="field-group">
+              <ion-input
+                label="Repite la contraseña"
+                labelPlacement="stacked"
+                fill="outline"
+                formControlName="confirmPassword"
+                type="password"
+                autocomplete="new-password"
+              ></ion-input>
+              @if (
+                form.controls.confirmPassword.touched &&
+                form.hasError('passwordMismatch')
+              ) {
+                <p class="field-hint field-error">Las contraseñas no coinciden.</p>
+              }
+            </div>
+
+            @if (errorMessage) {
+              <p class="form-error" role="alert">{{ errorMessage }}</p>
+            }
+
+            <ion-button
+              class="submit-button"
+              type="submit"
+              expand="block"
+              [disabled]="isSubmitting"
+            >
+              {{ isSubmitting ? 'Creando cuenta…' : 'Crear acceso administrador' }}
+            </ion-button>
+          </form>
+
+          <p class="privacy-note">
+            La cuenta se guarda en esta instalación. Si olvidas la contraseña,
+            todavía no existe recuperación en línea.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
+</ion-content>

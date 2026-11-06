@@ -1,0 +1,362 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/gestion/deportistas"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver a deportistas"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ editingId() ? 'Editar deportista' : 'Nuevo deportista' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <main class="athlete-form-shell">
+    <header class="form-heading">
+      <p class="section-kicker">PERSONAS</p>
+      <h1>{{ editingId() ? 'Editar deportista' : 'Registrar deportista' }}</h1>
+      <p>
+        {{
+          editingId()
+            ? 'Actualiza su perfil, foto y acudientes.'
+            : 'Completa su perfil, inscripción, categoría y acudientes.'
+        }}
+      </p>
+    </header>
+
+    <form class="athlete-form app-card" [formGroup]="form" (ngSubmit)="save()">
+      <section class="form-section">
+        <div class="form-section-heading">
+          <h2>Información personal</h2>
+          <p>Los datos básicos del perfil deportivo.</p>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <ion-input
+              label="Nombres"
+              labelPlacement="stacked"
+              fill="outline"
+              formControlName="nombres"
+              type="text"
+              autocomplete="given-name"
+              errorText="Ingresa los nombres"
+            ></ion-input>
+          </div>
+          <div class="form-field">
+            <ion-input
+              label="Apellidos"
+              labelPlacement="stacked"
+              fill="outline"
+              formControlName="apellidos"
+              type="text"
+              autocomplete="family-name"
+              errorText="Ingresa los apellidos"
+            ></ion-input>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <app-date-input
+            label="Fecha de nacimiento"
+            formControlName="fechaNacimiento"
+            [max]="today"
+            errorText="Selecciona la fecha de nacimiento"
+            [invalid]="form.controls.fechaNacimiento.invalid && form.controls.fechaNacimiento.touched"
+          ></app-date-input>
+        </div>
+        <div class="form-field">
+          <app-date-input
+            label="Fecha real de ingreso a la escuela"
+            formControlName="fechaIngreso"
+            [max]="today"
+            errorText="Selecciona una fecha de ingreso válida"
+            [invalid]="form.controls.fechaIngreso.invalid && form.controls.fechaIngreso.touched"
+          ></app-date-input>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <div class="form-section-heading">
+          <h2>Foto del deportista</h2>
+          <p>Elige una foto existente o toma una nueva desde el dispositivo.</p>
+        </div>
+
+        @if (photoDataUrl()) {
+          <div class="photo-preview">
+            <img [src]="photoDataUrl()" alt="Foto seleccionada del deportista" />
+            <ion-button
+              type="button"
+              fill="clear"
+              class="remove-photo"
+              (click)="removePhoto()"
+              aria-label="Quitar foto"
+            >
+              <ion-icon slot="icon-only" [icon]="removePhotoIcon"></ion-icon>
+            </ion-button>
+          </div>
+        } @else {
+          <div class="photo-placeholder" aria-hidden="true">
+            <ion-icon [icon]="cameraIcon"></ion-icon>
+          </div>
+        }
+
+        <input
+          #cameraPicker
+          class="visually-hidden"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          (change)="onPhotoSelected($event)"
+        />
+        <input
+          #galleryPicker
+          class="visually-hidden"
+          type="file"
+          accept="image/*"
+          (change)="onPhotoSelected($event)"
+        />
+
+        <div class="photo-actions">
+          <ion-button
+            type="button"
+            fill="outline"
+            (click)="cameraPicker.click()"
+          >
+            <ion-icon slot="start" [icon]="cameraIcon"></ion-icon>
+            Tomar foto
+          </ion-button>
+          <ion-button
+            type="button"
+            fill="outline"
+            (click)="galleryPicker.click()"
+          >
+            <ion-icon slot="start" [icon]="galleryIcon"></ion-icon>
+            Elegir de galería
+          </ion-button>
+        </div>
+        <p class="field-hint">La imagen se reduce y guarda localmente en la app.</p>
+        @if (photoError()) {
+          <p class="form-error" role="alert">{{ photoError() }}</p>
+        }
+      </section>
+
+      <section class="form-section">
+        <div class="form-section-heading">
+          <h2>Categoría deportiva</h2>
+          <p>La tarifa mensual se determina según esta categoría.</p>
+        </div>
+
+        @if (isLoadingOptions()) {
+          <p class="field-hint">Cargando categorías…</p>
+        } @else if (categories().length === 0) {
+          <p class="form-hint">
+            Primero debes crear una categoría.
+            <a routerLink="/gestion/categorias">Ir a categorías</a>
+          </p>
+        }
+
+        @if (editingId() && !canEditSchedule()) {
+          <p class="field-hint">
+            La categoría y la fecha de ingreso están bloqueadas porque el
+            deportista ya tiene obligaciones o historial de categoría.
+          </p>
+        }
+        @if (categories().length > 0) {
+          <div class="form-field">
+            <ion-select
+              label="Categoría"
+              labelPlacement="stacked"
+              fill="outline"
+              interface="action-sheet"
+              formControlName="categoriaId"
+              errorText="Selecciona una categoría"
+            >
+              @for (category of categories(); track category.id) {
+                <ion-select-option [value]="category.id">
+                  {{ category.nombre }}
+                </ion-select-option>
+              }
+            </ion-select>
+          </div>
+        }
+      </section>
+
+      @if (!editingId()) {
+      <section class="form-section">
+        <div class="form-section-heading">
+          <h2>Cobros de ingreso</h2>
+          @if (isLegacyAthlete()) {
+            <p>
+              Este deportista ingresó antes del inicio del control y no recibirá
+              un cobro de inscripción.
+            </p>
+          } @else {
+            <p>
+              La inscripción usa la tarifa de la escuela. La mensualidad del mes
+              de ingreso se cobra completa.
+            </p>
+          }
+        </div>
+        @if (!billingSettings()?.fecha_inicio_control_pagos) {
+          <p class="form-hint" role="alert">
+            Configura primero la fecha de inicio y el valor de inscripción en
+            <a routerLink="/gestion/escuela">Datos de la escuela</a>.
+          </p>
+        } @else if (!isLegacyAthlete()) {
+          <p class="field-hint">
+            Inscripción: {{ registrationAmount() | number:'1.0-0' }} COP
+          </p>
+        }
+      </section>
+      }
+
+      <section class="form-section">
+        <div class="form-section-heading">
+          <h2>Acudientes</h2>
+          <p>Vincula responsables e indica su parentesco con el deportista.</p>
+        </div>
+
+        @if (guardians().length === 0) {
+          <p class="form-hint">
+            No hay acudientes registrados. Puedes guardar el deportista sin
+            vínculos y agregarlos luego desde
+            <a routerLink="/gestion/acudientes/nuevo">Nuevo acudiente</a>.
+          </p>
+        }
+
+        <div formArrayName="guardianLinks" class="guardian-links">
+          @for (link of guardianLinks.controls; track $index; let index = $index) {
+            <div class="guardian-link-row" [formGroupName]="index">
+              <div class="form-field guardian-picker">
+                <span class="guardian-picker-label">Acudiente</span>
+
+                @let selectedGuardian = guardianById(link.controls.acudienteId.value);
+                @if (selectedGuardian) {
+                  <div class="guardian-selected">
+                    <span class="guardian-selected-name">
+                      {{ selectedGuardian.nombres }} {{ selectedGuardian.apellidos }}
+                    </span>
+                    <ion-button
+                      type="button"
+                      fill="clear"
+                      class="change-guardian"
+                      (click)="clearGuardianSelection(link)"
+                      aria-label="Cambiar acudiente"
+                    >
+                      <ion-icon slot="icon-only" [icon]="removePhotoIcon"></ion-icon>
+                    </ion-button>
+                  </div>
+                } @else {
+                  <ion-searchbar
+                    class="guardian-search"
+                    placeholder="Buscar por nombre o documento"
+                    aria-label="Buscar acudiente"
+                    formControlName="busqueda"
+                    debounce="150"
+                  ></ion-searchbar>
+
+                  @if (link.controls.busqueda.value.trim()) {
+                    @let matches = filteredGuardians(link);
+                    @if (matches.length > 0) {
+                      <ion-list class="guardian-options" lines="none">
+                        @for (guardian of matches.slice(0, 2); track guardian.id) {
+                          <ion-item
+                            button
+                            detail="false"
+                            (click)="selectGuardian(link, guardian.id)"
+                          >
+                            <ion-label>{{ formatGuardian(guardian) }}</ion-label>
+                          </ion-item>
+                        }
+                      </ion-list>
+                      @if (matches.length > 2) {
+                        <p class="field-hint">
+                          Sigue escribiendo para acotar los
+                          {{ matches.length }} resultados.
+                        </p>
+                      }
+                    } @else {
+                      <p class="field-hint">
+                        Sin acudientes que coincidan con la búsqueda.
+                      </p>
+                    }
+                  }
+                }
+
+                @if (
+                  link.controls.acudienteId.invalid &&
+                  link.controls.acudienteId.touched
+                ) {
+                  <p class="guardian-picker-error" role="alert">
+                    Selecciona un acudiente
+                  </p>
+                }
+              </div>
+              <div class="form-field relationship-field">
+                <ion-select
+                  label="Parentesco"
+                  labelPlacement="stacked"
+                  fill="outline"
+                  interface="action-sheet"
+                  formControlName="parentesco"
+                  errorText="Indica el parentesco"
+                >
+                  @if (
+                    link.controls.acudienteId.value ||
+                    link.controls.parentesco.value
+                  ) {
+                    <ion-button
+                      slot="end"
+                      type="button"
+                      fill="clear"
+                      class="remove-guardian"
+                      (click)="removeGuardianLink(index)"
+                      aria-label="Quitar acudiente"
+                    >
+                      <ion-icon slot="icon-only" [icon]="removePhotoIcon"></ion-icon>
+                    </ion-button>
+                  }
+                  @for (relationship of parentescos; track relationship) {
+                    <ion-select-option [value]="relationship">
+                      {{ relationship }}
+                    </ion-select-option>
+                  }
+                </ion-select>
+              </div>
+            </div>
+          }
+        </div>
+
+        <ion-button
+          type="button"
+          fill="outline"
+          [disabled]="guardians().length === 0"
+          (click)="addGuardianLink()"
+        >
+          <ion-icon slot="start" [icon]="addIcon"></ion-icon>
+          Agregar acudiente
+        </ion-button>
+      </section>
+
+      @if (errorMessage()) {
+        <p class="form-error" role="alert">{{ errorMessage() }}</p>
+      }
+
+      <div class="form-actions">
+        <ion-button type="button" fill="clear" (click)="cancel()">
+          Cancelar
+        </ion-button>
+        <ion-button
+          type="submit"
+          color="primary"
+          [disabled]="isSaving() || isLoadingOptions() || categories().length === 0"
+        >
+          {{ isSaving() ? 'Guardando…' : (editingId() ? 'Guardar cambios' : 'Guardar deportista') }}
+        </ion-button>
+      </div>
+    </form>
+  </main>
+</ion-content>

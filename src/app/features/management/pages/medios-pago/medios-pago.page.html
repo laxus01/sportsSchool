@@ -1,0 +1,180 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/home"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver al panel"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>Medios de pago</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <ion-fab slot="fixed" vertical="top" horizontal="end" class="page-action-fab">
+    <ion-fab-button
+      (click)="addPaymentMethod()"
+      aria-label="Agregar medio de pago"
+    >
+      <ion-icon [icon]="icons.addOutline"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <main class="payment-methods-shell">
+    <header class="page-heading">
+      <div>
+        <p class="section-kicker">ADMINISTRACIÓN</p>
+        <h1>Medios de pago</h1>
+        <p>Bancos y entidades disponibles para registrar transferencias.</p>
+      </div>
+    </header>
+
+    <ion-searchbar
+      class="payment-method-search"
+      placeholder="Buscar por nombre o tipo"
+      aria-label="Buscar medios de pago"
+      [value]="searchTerm()"
+      (ionInput)="updateSearch($event)"
+      debounce="150"
+    ></ion-searchbar>
+
+    @if (isLoading()) {
+      <section class="app-card list-state" aria-live="polite">
+        <p class="app-muted">Cargando medios de pago…</p>
+      </section>
+    } @else if (errorMessage()) {
+      <section class="app-card list-state" role="alert">
+        <h2>No se pudo abrir la lista</h2>
+        <p>{{ errorMessage() }}</p>
+      </section>
+    } @else if (paymentMethods().length === 0) {
+      <section class="app-card list-state">
+        <span class="empty-icon" aria-hidden="true">
+          <ion-icon [icon]="icons.cardOutline"></ion-icon>
+        </span>
+        <h2>Aún no hay medios de pago</h2>
+        <p>Agrega el banco o canal donde recibes las transferencias.</p>
+      </section>
+    } @else if (filteredPaymentMethods().length === 0) {
+      <section class="app-card list-state">
+        <h2>No encontramos coincidencias</h2>
+        <p>Prueba con otro nombre o tipo de medio.</p>
+      </section>
+    } @else {
+      <div class="payment-method-grid">
+        @for (method of filteredPaymentMethods(); track method.id) {
+          <article class="payment-method-card app-card">
+            <span class="payment-method-icon" aria-hidden="true">
+              <ion-icon [icon]="icons.cardOutline"></ion-icon>
+            </span>
+            <div class="payment-method-info">
+              <h2>{{ method.nombre }}</h2>
+              <p>
+                <span>{{ typeLabel(method.tipo) }}</span>
+              </p>
+              <p>{{ method.activa ? 'Activo' : 'Inactivo' }}</p>
+              <div class="record-actions">
+                <ion-button
+                  type="button"
+                  fill="clear"
+                  size="small"
+                  (click)="editPaymentMethod(method)"
+                  [attr.aria-label]="'Editar ' + method.nombre"
+                >
+                  <ion-icon slot="start" [icon]="icons.pencilOutline"></ion-icon>
+                  Editar
+                </ion-button>
+                <ion-button
+                  type="button"
+                  fill="clear"
+                  size="small"
+                  color="danger"
+                  (click)="openDeleteMethod(method)"
+                  [attr.aria-label]="'Eliminar ' + method.nombre"
+                >
+                  <ion-icon slot="start" [icon]="icons.trashOutline"></ion-icon>
+                  Eliminar
+                </ion-button>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </main>
+</ion-content>
+
+<ion-modal
+  [isOpen]="isDeleteModalOpen()"
+  (didDismiss)="closeDeleteModal()"
+  [backdropDismiss]="!isDeleting()"
+>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting()"
+            aria-label="Cerrar eliminación"
+          >
+            <ion-icon slot="icon-only" [icon]="icons.chevronBackOutline"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+        <ion-title>Eliminar medio de pago</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="app-page">
+      <section class="confirm-dialog app-card">
+        @if (methodToDelete(); as method) {
+          <p>
+            Se revisará el medio de pago
+            <strong>{{ method.nombre }}</strong>.
+          </p>
+        }
+        @if (isCheckingDelete()) {
+          <p class="app-muted">Revisando referencias…</p>
+        } @else if (deleteWillDeactivate()) {
+          <p>
+            El medio de pago está referenciado por pagos registrados, por lo
+            que se desactivará en lugar de eliminarse.
+          </p>
+        } @else {
+          <p>
+            Se eliminará definitivamente. Esta acción no se puede
+            deshacer.
+          </p>
+        }
+        @if (deleteError()) {
+          <p class="form-error" role="alert">{{ deleteError() }}</p>
+        }
+        <div class="modal-actions">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting()"
+          >
+            Cancelar
+          </ion-button>
+          <ion-button
+            type="button"
+            color="danger"
+            [disabled]="isDeleting() || isCheckingDelete() || !!deleteError()"
+            (click)="confirmDeleteMethod()"
+          >
+            {{
+              isDeleting()
+                ? 'Procesando…'
+                : (deleteWillDeactivate() ? 'Desactivar' : 'Eliminar')
+            }}
+          </ion-button>
+        </div>
+      </section>
+    </ion-content>
+  </ng-template>
+</ion-modal>

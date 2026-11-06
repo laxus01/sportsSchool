@@ -1,0 +1,123 @@
+.financial-summary-shell {
+  width: min(100% - 2rem, 76rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2.5rem) 0 3rem;
+}
+
+.page-heading {
+  margin-bottom: 1.3rem;
+}
+
+.page-heading h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.page-heading p:last-child {
+  margin: 0.45rem 0 0;
+  color: var(--app-muted);
+}
+
+.section-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.collapsible-section {
+  margin: 1rem 0;
+}
+
+.collapsible-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.collapsible-section[open] > .collapsible-section-heading {
+  margin-bottom: 0.7rem;
+}
+
+.collapsible-section-heading::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible-section-heading:focus-visible {
+  outline: 2px solid var(--app-primary);
+  outline-offset: 4px;
+}
+
+.collapsible-section-heading .section-kicker {
+  margin: 0;
+}
+
+.collapsible-section-heading ion-icon {
+  flex: 0 0 auto;
+  color: var(--app-primary);
+  font-size: 1.1rem;
+  transition: transform 0.18s ease;
+}
+
+.collapsible-section[open] > .collapsible-section-heading ion-icon {
+  transform: rotate(180deg);
+}
+
+.financial-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.summary-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+}
+
+.summary-card span {
+  color: var(--app-muted);
+  font-size: 0.8rem;
+}
+
+.summary-card strong {
+  color: var(--app-primary);
+  font-size: 1.1rem;
+}
+
+.summary-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1.25rem;
+  color: var(--app-muted);
+  text-align: center;
+}
+
+.summary-state h2,
+.summary-state p {
+  margin: 0;
+}
+
+.summary-state h2 {
+  color: var(--app-text);
+  font-size: 1.1rem;
+}
+
+@media (max-width: 700px) {
+  .financial-summary-shell {
+    width: min(100% - 1.5rem, 76rem);
+  }
+
+  .financial-summary {
+    grid-template-columns: 1fr;
+  }
+}

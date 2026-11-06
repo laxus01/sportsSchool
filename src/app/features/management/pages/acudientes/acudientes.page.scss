@@ -1,0 +1,183 @@
+.caregivers-shell {
+  width: min(100% - 2rem, 76rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2.5rem) 0 3rem;
+}
+
+.caregivers-shell .page-heading {
+  margin-bottom: 1.3rem;
+}
+
+.caregivers-shell .section-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.caregivers-shell .page-heading h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.caregivers-shell .page-heading p:last-child {
+  margin: 0.45rem 0 0;
+  color: var(--app-muted);
+}
+
+.caregivers-shell .caregiver-search {
+  --background: var(--app-surface);
+  --border-radius: var(--app-radius-control);
+  --box-shadow: none;
+  --color: var(--app-text);
+  --icon-color: var(--app-muted);
+  --placeholder-color: var(--app-muted);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-control);
+  margin: 0 0 1.1rem;
+  padding: 0;
+}
+
+.caregivers-shell .caregiver-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.caregivers-shell .caregiver-card {
+  min-width: 0;
+  padding: 1.1rem;
+}
+
+.caregivers-shell .caregiver-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.caregivers-shell .caregiver-avatar,
+.caregivers-shell .empty-icon {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.85rem;
+  background: var(--app-aqua);
+  color: var(--app-primary);
+}
+
+.caregivers-shell .caregiver-avatar ion-icon {
+  font-size: 1.45rem;
+}
+
+.caregivers-shell .caregiver-identity {
+  min-width: 0;
+}
+
+.caregivers-shell .caregiver-identity h2 {
+  overflow: hidden;
+  margin: 0;
+  color: var(--app-text);
+  font-size: 0.98rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.caregivers-shell .caregiver-identity p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.25rem 0 0;
+  color: var(--app-text);
+  font-size: 0.8rem;
+}
+
+.caregivers-shell .caregiver-identity p span {
+  color: var(--app-muted);
+}
+
+.caregivers-shell .caregiver-details {
+  display: grid;
+  gap: 0.8rem;
+  margin: 1rem 0 0;
+  border-top: 1px solid var(--app-border);
+  padding-top: 0.85rem;
+}
+
+.caregivers-shell .caregiver-details div {
+  min-width: 0;
+}
+
+.caregivers-shell .caregiver-details dt {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--app-muted);
+  font-size: 0.72rem;
+}
+
+.caregivers-shell .caregiver-details dt ion-icon {
+  color: var(--app-primary);
+  font-size: 0.95rem;
+}
+
+.caregivers-shell .caregiver-details dd {
+  overflow-wrap: anywhere;
+  margin: 0.2rem 0 0;
+  color: var(--app-text);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.caregivers-shell .list-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.65rem;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+}
+
+.caregivers-shell .list-state h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.15rem;
+}
+
+.caregivers-shell .list-state p {
+  margin: 0;
+  color: var(--app-muted);
+  line-height: 1.55;
+}
+
+.caregivers-shell .empty-icon ion-icon {
+  font-size: 1.5rem;
+}
+
+@media (max-width: 760px) {
+  .caregivers-shell .caregiver-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .caregivers-shell {
+    width: min(100% - 1.5rem, 76rem);
+  }
+}
+
+.caregivers-shell .record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  margin-top: 0.85rem;
+}
+

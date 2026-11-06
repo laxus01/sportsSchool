@@ -1,0 +1,60 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/home"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver al panel"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>Resumen Finanzas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <main class="financial-summary-shell">
+    <header class="page-heading">
+      <div>
+        <p class="section-kicker">FINANZAS</p>
+        <h1>Resumen Finanzas</h1>
+        <p>Consulta la recaudación del mes y los saldos pendientes.</p>
+      </div>
+    </header>
+
+    @if (isLoading()) {
+      <section class="app-card summary-state" aria-live="polite">
+        <p>Cargando resumen financiero...</p>
+      </section>
+    } @else if (pageError()) {
+      <section class="app-card summary-state" role="alert">
+        <h2>No se pudo cargar el resumen</h2>
+        <p>{{ pageError() }}</p>
+      </section>
+    } @else {
+      <details class="collapsible-section summary-section" open>
+        <summary class="collapsible-section-heading">
+          <span class="section-kicker">RESUMEN FINANCIERO</span>
+          <ion-icon
+            [icon]="icons.chevronDownOutline"
+            aria-hidden="true"
+          ></ion-icon>
+        </summary>
+        <section class="financial-summary" aria-label="Resumen financiero">
+          <article class="summary-card app-card">
+            <span>Recaudado este mes</span>
+            <strong>{{ formatAmount(collectedThisMonth()) }}</strong>
+          </article>
+          <article class="summary-card app-card">
+            <span>Saldo pendiente</span>
+            <strong>{{ formatAmount(totalPending()) }}</strong>
+          </article>
+          <article class="summary-card app-card">
+            <span>Deportistas con saldo</span>
+            <strong>{{ athletesWithBalance() }}</strong>
+          </article>
+        </section>
+      </details>
+    }
+  </main>
+</ion-content>

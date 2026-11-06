@@ -1,0 +1,41 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Panel"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ section()?.title ?? 'Módulo' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  @if (section(); as currentSection) {
+    <main class="management-shell">
+      <div class="management-heading">
+        <span class="management-icon app-card" aria-hidden="true">
+          <ion-icon [icon]="currentSection.icon"></ion-icon>
+        </span>
+        <div>
+          <p class="section-kicker">{{ currentSection.group }}</p>
+          <h1>{{ currentSection.title }}</h1>
+          <p>{{ currentSection.description }}</p>
+        </div>
+      </div>
+
+      <section class="empty-state app-card">
+        <p class="section-kicker">SIGUIENTE ETAPA</p>
+        <h2>La vista ya tiene su espacio.</h2>
+        <p>
+          Aquí construiremos la consulta y el formulario para registrar
+          {{ currentSection.recordsLabel }}.
+        </p>
+        <p class="empty-note">
+          Por ahora, esta opción solo prepara la navegación; todavía no guarda
+          registros.
+        </p>
+        <ion-button routerLink="/home">Volver al panel</ion-button>
+      </section>
+    </main>
+  } @else {
+    <div class="management-loading" aria-live="polite">Cargando módulo…</div>
+  }
+</ion-content>

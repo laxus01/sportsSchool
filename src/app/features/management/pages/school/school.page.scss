@@ -1,0 +1,121 @@
+.school-shell {
+  width: min(100% - 2rem, 48rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 3rem) 0;
+}
+
+.school-heading {
+  margin-bottom: 1.5rem;
+}
+
+.section-kicker {
+  margin: 0 0 0.45rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.school-heading h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.school-heading > p:last-child,
+.school-form-heading > p {
+  margin: 0.5rem 0 0;
+  color: var(--app-muted);
+  line-height: 1.55;
+}
+
+.school-card {
+  display: grid;
+  gap: 1.1rem;
+  padding: clamp(1.25rem, 5vw, 2rem);
+}
+
+.school-form-heading h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.billing-settings {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.field-group ion-input {
+  --background: var(--app-surface);
+  --border-color: var(--app-border);
+  --border-radius: var(--app-radius-control);
+  --color: var(--app-text);
+  --highlight-color-focused: var(--app-primary);
+  --highlight-color-invalid: var(--app-danger);
+  --padding-bottom: 0.8rem;
+  --padding-start: 0.9rem;
+  --padding-top: 0.8rem;
+  font-size: 1rem;
+}
+
+.form-error,
+.form-success {
+  margin: 0;
+  border-radius: var(--app-radius-control);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.form-error {
+  border: 1px solid var(--app-danger-border);
+  background: var(--app-danger-surface);
+  color: var(--app-danger);
+}
+
+.form-success {
+  border: 1px solid var(--app-aqua);
+  background: var(--app-aqua);
+  color: var(--app-text);
+}
+
+.school-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.cancel-button {
+  --color: var(--app-muted);
+}
+
+.save-button {
+  --background: var(--app-primary);
+  --background-activated: var(--app-primary-pressed);
+  --background-hover: var(--app-primary-hover);
+  --border-radius: var(--app-radius-control);
+  --box-shadow: none;
+  min-height: 3rem;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .school-shell {
+    width: min(100% - 1.5rem, 48rem);
+  }
+
+  .school-actions {
+    flex-direction: column-reverse;
+  }
+
+  .school-actions ion-button {
+    width: 100%;
+    margin: 0;
+  }
+}

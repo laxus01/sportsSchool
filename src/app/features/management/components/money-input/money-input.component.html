@@ -1,0 +1,16 @@
+<ion-input
+  [label]="label"
+  labelPlacement="stacked"
+  fill="outline"
+  [placeholder]="placeholder"
+  [helperText]="helperText"
+  [errorText]="errorText"
+  [value]="displayValue()"
+  [disabled]="disabled()"
+  [class.ion-invalid]="invalid"
+  [class.ion-touched]="invalid"
+  type="text"
+  inputmode="numeric"
+  (ionInput)="handleInput($event)"
+  (ionBlur)="handleBlur()"
+></ion-input>

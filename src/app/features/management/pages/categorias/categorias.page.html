@@ -1,0 +1,406 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/home"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver al panel"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>Categorías</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <ion-fab slot="fixed" vertical="top" horizontal="end" class="page-action-fab">
+    <ion-fab-button
+      (click)="openNewCategory()"
+      aria-label="Agregar categoría"
+    >
+      <ion-icon [icon]="addIcon"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <main class="categories-shell">
+    <header class="page-heading">
+      <div>
+        <p class="section-kicker">ADMINISTRACIÓN</p>
+        <h1>Categorías y tarifas</h1>
+        <p>Define los grupos deportivos y la mensualidad de cada uno.</p>
+      </div>
+    </header>
+
+    @if (isLoading()) {
+      <section class="app-card category-state" aria-live="polite">
+        <p class="app-muted">Cargando categorías…</p>
+      </section>
+    } @else if (pageError()) {
+      <section class="app-card category-state" role="alert">
+        <h2>No se pudieron cargar las categorías</h2>
+        <p>{{ pageError() }}</p>
+      </section>
+    } @else if (categories().length === 0) {
+      <section class="app-card category-state">
+        <span class="category-empty-icon" aria-hidden="true">
+          <ion-icon [icon]="categoryIcon"></ion-icon>
+        </span>
+        <h2>Aún no hay categorías</h2>
+        <p>Crea la primera categoría e indica su valor mensual vigente.</p>
+      </section>
+    } @else {
+      <div class="category-grid">
+        @for (category of categories(); track category.id) {
+          <article class="category-card app-card">
+            <header class="category-card-heading">
+              <span class="category-icon" aria-hidden="true">
+                <ion-icon [icon]="categoryIcon"></ion-icon>
+              </span>
+              <div>
+                <h2>{{ category.nombre }}</h2>
+                @if (category.descripcion) {
+                  <p>{{ category.descripcion }}</p>
+                }
+              </div>
+            </header>
+
+            <div class="monthly-rate">
+              <span>Mensualidad vigente</span>
+              <strong>{{ formatAmount(category.monto_pesos) }}</strong>
+              @if (category.vigente_desde) {
+                <small>Vigente desde {{ category.vigente_desde }}</small>
+              }
+            </div>
+
+            <ion-button
+              class="adjust-button"
+              fill="outline"
+              (click)="openTariffAdjustment(category)"
+            >
+              Ajustar mensualidad
+            </ion-button>
+
+            <div class="record-actions">
+              <ion-button
+                type="button"
+                fill="clear"
+                size="small"
+                (click)="openEditCategory(category)"
+                [attr.aria-label]="'Editar ' + category.nombre"
+              >
+                <ion-icon slot="start" [icon]="editIcon"></ion-icon>
+                Editar
+              </ion-button>
+              <ion-button
+                type="button"
+                fill="clear"
+                size="small"
+                color="danger"
+                (click)="openDeleteCategory(category)"
+                [attr.aria-label]="'Eliminar ' + category.nombre"
+              >
+                <ion-icon slot="start" [icon]="deleteIcon"></ion-icon>
+                Eliminar
+              </ion-button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </main>
+</ion-content>
+
+<ion-modal
+  [isOpen]="modalMode() !== null"
+  (didDismiss)="closeModal()"
+  [backdropDismiss]="!isSaving()"
+>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeModal()"
+            [disabled]="isSaving()"
+            aria-label="Cerrar modal de categoría"
+          >
+            <ion-icon slot="icon-only" [icon]="backIcon"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+        <ion-title>
+          {{ modalMode() === 'new-category' ? 'Nueva categoría' : (modalMode() === 'edit-category' ? 'Editar categoría' : 'Ajustar mensualidad') }}
+        </ion-title>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="app-page">
+      <div class="category-modal-shell">
+        @if (modalMode() === 'new-category') {
+          <form
+            class="category-form app-card"
+            [formGroup]="categoryForm"
+            (ngSubmit)="createCategory()"
+          >
+            <div class="modal-heading">
+              <p class="section-kicker">NUEVO GRUPO</p>
+              <h2>Crear categoría</h2>
+              <p>El valor inicial quedará asociado a su fecha de vigencia.</p>
+            </div>
+
+            <div class="form-field">
+              <ion-input
+                label="Nombre de la categoría"
+                labelPlacement="stacked"
+                fill="outline"
+                formControlName="nombre"
+                type="text"
+                maxlength="120"
+                errorText="Ingresa un nombre para la categoría"
+              ></ion-input>
+            </div>
+
+            <div class="form-field">
+              <ion-textarea
+                label="Descripción (opcional)"
+                labelPlacement="stacked"
+                fill="outline"
+                formControlName="descripcion"
+                autoGrow="true"
+                maxlength="300"
+              ></ion-textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <app-money-input
+                  label="Mensualidad (COP)"
+                  formControlName="montoMensual"
+                  helperText="Valor en pesos colombianos, sin decimales."
+                  errorText="Ingresa un valor mensual válido"
+                  [invalid]="categoryForm.controls.montoMensual.invalid && categoryForm.controls.montoMensual.touched"
+                ></app-money-input>
+              </div>
+              <div class="form-field">
+                <app-date-input
+                  label="Vigente desde"
+                  formControlName="vigenteDesde"
+                  [min]="today"
+                  errorText="Selecciona una fecha válida"
+                  [invalid]="categoryForm.controls.vigenteDesde.invalid && categoryForm.controls.vigenteDesde.touched"
+                ></app-date-input>
+              </div>
+            </div>
+
+            @if (modalError()) {
+              <p class="form-error" role="alert">{{ modalError() }}</p>
+            }
+
+            <div class="modal-actions">
+              <ion-button
+                type="button"
+                fill="clear"
+                (click)="closeModal()"
+                [disabled]="isSaving()"
+              >
+                Cancelar
+              </ion-button>
+              <ion-button type="submit" color="primary" [disabled]="isSaving()">
+                {{ isSaving() ? 'Guardando…' : 'Crear categoría' }}
+              </ion-button>
+            </div>
+          </form>
+        } @else if (modalMode() === 'edit-category' && selectedCategory(); as category) {
+          <form
+            class="category-form app-card"
+            [formGroup]="categoryForm"
+            (ngSubmit)="saveCategoryEdit()"
+          >
+            <div class="modal-heading">
+              <p class="section-kicker">GRUPO DEPORTIVO</p>
+              <h2>{{ category.nombre }}</h2>
+              <p>
+                Actualiza el nombre o la descripción. La mensualidad se
+                ajusta desde la tarifa vigente.
+              </p>
+            </div>
+
+            <div class="form-field">
+              <ion-input
+                label="Nombre de la categoría"
+                labelPlacement="stacked"
+                fill="outline"
+                formControlName="nombre"
+                type="text"
+                maxlength="120"
+                errorText="Ingresa un nombre para la categoría"
+              ></ion-input>
+            </div>
+
+            <div class="form-field">
+              <ion-textarea
+                label="Descripción (opcional)"
+                labelPlacement="stacked"
+                fill="outline"
+                formControlName="descripcion"
+                autoGrow="true"
+                maxlength="300"
+              ></ion-textarea>
+            </div>
+
+            @if (modalError()) {
+              <p class="form-error" role="alert">{{ modalError() }}</p>
+            }
+
+            <div class="modal-actions">
+              <ion-button
+                type="button"
+                fill="clear"
+                (click)="closeModal()"
+                [disabled]="isSaving()"
+              >
+                Cancelar
+              </ion-button>
+              <ion-button type="submit" color="primary" [disabled]="isSaving()">
+                {{ isSaving() ? 'Guardando…' : 'Guardar cambios' }}
+              </ion-button>
+            </div>
+          </form>
+        } @else if (modalMode() === 'adjust-tariff' && selectedCategory(); as category) {
+          <form
+            class="category-form app-card"
+            [formGroup]="tariffForm"
+            (ngSubmit)="adjustMonthlyFee()"
+          >
+            <div class="modal-heading">
+              <p class="section-kicker">TARIFA POR CATEGORÍA</p>
+              <h2>{{ category.nombre }}</h2>
+              <p>
+                Actualiza la mensualidad; las tarifas anteriores y los cobros
+                ya generados se conservarán.
+              </p>
+            </div>
+
+            <div class="current-rate-note">
+              <span>Mensualidad actual</span>
+              <strong>{{ formatAmount(category.monto_pesos) }}</strong>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <app-money-input
+                  label="Nueva mensualidad (COP)"
+                  formControlName="montoMensual"
+                  helperText="Valor en pesos colombianos, sin decimales."
+                  errorText="Ingresa un valor mensual válido"
+                  [invalid]="tariffForm.controls.montoMensual.invalid && tariffForm.controls.montoMensual.touched"
+                ></app-money-input>
+              </div>
+              <div class="form-field">
+                <app-date-input
+                  label="Aplicar desde"
+                  formControlName="vigenteDesde"
+                  [min]="today"
+                  errorText="Selecciona una fecha válida"
+                  [invalid]="tariffForm.controls.vigenteDesde.invalid && tariffForm.controls.vigenteDesde.touched"
+                ></app-date-input>
+              </div>
+            </div>
+
+            @if (modalError()) {
+              <p class="form-error" role="alert">{{ modalError() }}</p>
+            }
+
+            <div class="modal-actions">
+              <ion-button
+                type="button"
+                fill="clear"
+                (click)="closeModal()"
+                [disabled]="isSaving()"
+              >
+                Cancelar
+              </ion-button>
+              <ion-button type="submit" color="primary" [disabled]="isSaving()">
+                {{ isSaving() ? 'Guardando…' : 'Guardar nueva tarifa' }}
+              </ion-button>
+            </div>
+          </form>
+        }
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<ion-modal
+  [isOpen]="isDeleteModalOpen()"
+  (didDismiss)="closeDeleteModal()"
+  [backdropDismiss]="!isDeleting()"
+>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting()"
+            aria-label="Cerrar eliminación"
+          >
+            <ion-icon slot="icon-only" [icon]="backIcon"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+        <ion-title>Eliminar categoría</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="app-page">
+      <section class="confirm-dialog app-card">
+        @if (categoryToDelete(); as category) {
+          <p>
+            Se revisará la categoría
+            <strong>{{ category.nombre }}</strong>.
+          </p>
+        }
+        @if (isCheckingDelete()) {
+          <p class="app-muted">Revisando relaciones…</p>
+        } @else if (deleteWillDeactivate()) {
+          <p>
+            La categoría tiene deportistas, historial o mensualidades
+            asociadas, por lo que se desactivará en lugar de eliminarse.
+          </p>
+        } @else {
+          <p>
+            Se eliminará junto con sus tarifas registradas. Esta acción
+            no se puede deshacer.
+          </p>
+        }
+        @if (deleteError()) {
+          <p class="form-error" role="alert">{{ deleteError() }}</p>
+        }
+        <div class="modal-actions">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting()"
+          >
+            Cancelar
+          </ion-button>
+          <ion-button
+            type="button"
+            color="danger"
+            [disabled]="isDeleting() || isCheckingDelete() || !!deleteError()"
+            (click)="confirmDeleteCategory()"
+          >
+            {{
+              isDeleting()
+                ? 'Procesando…'
+                : (deleteWillDeactivate() ? 'Desactivar' : 'Eliminar')
+            }}
+          </ion-button>
+        </div>
+      </section>
+    </ion-content>
+  </ng-template>
+</ion-modal>

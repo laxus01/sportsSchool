@@ -1,0 +1,22 @@
+.form-inner {
+  max-width: 29rem;
+}
+
+.form-intro {
+  margin-bottom: 1.4rem;
+}
+
+form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.field-hint {
+  margin: 0.4rem 0 0 0.25rem;
+  color: var(--app-muted);
+  font-size: 0.78rem;
+}
+
+.field-error {
+  color: var(--app-danger);
+}

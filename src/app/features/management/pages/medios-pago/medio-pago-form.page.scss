@@ -1,0 +1,81 @@
+.payment-method-form-shell {
+  width: min(100% - 2rem, 44rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 3rem) 0;
+}
+
+.form-heading {
+  margin-bottom: 1.5rem;
+}
+
+.section-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.form-heading h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.form-heading > p:last-child,
+.form-section-heading > p {
+  margin: 0.45rem 0 0;
+  color: var(--app-muted);
+  line-height: 1.55;
+}
+
+.payment-method-form {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.25rem, 5vw, 2rem);
+}
+
+.form-section-heading h2 {
+  margin: 0;
+  font-weight: 700;
+}
+
+.form-error {
+  margin: 0;
+  border: 1px solid var(--app-danger-border);
+  border-radius: var(--app-radius-control);
+  padding: 0.7rem 0.85rem;
+  background: var(--app-danger-surface);
+  color: var(--app-danger);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.cancel-button {
+  --color: var(--app-muted);
+}
+
+@media (max-width: 600px) {
+  .payment-method-form-shell {
+    width: min(100% - 1.5rem, 44rem);
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions ion-button {
+    width: 100%;
+    margin: 0;
+  }
+}

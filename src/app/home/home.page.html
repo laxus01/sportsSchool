@@ -1,0 +1,63 @@
+<ion-header>
+  <ion-toolbar class="home-toolbar">
+    <ion-title>Sports School</ion-title>
+    <ion-buttons slot="end">
+      <ion-button
+        (click)="logout()"
+        aria-label="Cerrar sesión"
+        title="Cerrar sesión"
+      >
+        <ion-icon [icon]="icons.powerOutline" aria-hidden="true"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="home-content app-page">
+  <main class="dashboard-shell">
+    <section class="dashboard-hero">
+      <div class="dashboard-hero-copy">
+        <p class="hero-overline">ADMINISTRACIÓN DEPORTIVA</p>
+        <h1>Hola, {{ currentUsername }}.</h1>
+        <p>¿Qué deseas organizar hoy?</p>
+      </div>
+      <div class="hero-mark" aria-hidden="true">SS</div>
+    </section>
+
+    <section class="dashboard-intro">
+      <div>
+        <p class="section-kicker">ESPACIO DE TRABAJO</p>
+        <h2>Áreas de la escuela</h2>
+      </div>
+      <p>Accesos directos a la información principal de tu equipo.</p>
+    </section>
+
+    @for (group of menuGroups; track group.name) {
+      <section class="module-group" [attr.aria-label]="group.name">
+        <div class="group-heading">
+          <h3>{{ group.name }}</h3>
+          <span>{{ group.items.length }} módulos</span>
+        </div>
+
+        <div class="module-grid">
+          @for (item of group.items; track item.id) {
+            <a
+              class="module-card app-card"
+              [routerLink]="['/gestion', item.id]"
+              [attr.aria-label]="'Abrir módulo ' + item.title"
+            >
+              <span class="module-icon" aria-hidden="true">
+                <ion-icon [icon]="item.icon"></ion-icon>
+              </span>
+              <span class="module-copy">
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.description }}</small>
+              </span>
+              <span class="module-arrow" aria-hidden="true">→</span>
+            </a>
+          }
+        </div>
+      </section>
+    }
+  </main>
+</ion-content>

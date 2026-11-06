@@ -1,0 +1,7 @@
+{
+  "name": "sportsSchool",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

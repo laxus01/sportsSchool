@@ -1,0 +1,229 @@
+.categories-shell {
+  width: min(100% - 2rem, 76rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2.5rem) 0 3rem;
+}
+
+.categories-shell .page-heading {
+  margin-bottom: 1.5rem;
+}
+
+.categories-shell .section-kicker,
+.category-modal-shell .section-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.categories-shell .page-heading h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.categories-shell .page-heading p:last-child {
+  margin: 0.45rem 0 0;
+  color: var(--app-muted);
+}
+
+.categories-shell .category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.categories-shell .category-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem;
+}
+
+.categories-shell .category-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.categories-shell .category-icon,
+.categories-shell .category-empty-icon {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.85rem;
+  background: var(--app-aqua);
+  color: var(--app-primary);
+}
+
+.categories-shell .category-icon ion-icon {
+  font-size: 1.4rem;
+}
+
+.categories-shell .category-card-heading h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.categories-shell .category-card-heading p {
+  margin: 0.25rem 0 0;
+  color: var(--app-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.categories-shell .monthly-rate {
+  display: grid;
+  gap: 0.2rem;
+  border-top: 1px solid var(--app-border);
+  padding-top: 0.85rem;
+}
+
+.categories-shell .monthly-rate span,
+.categories-shell .monthly-rate small {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+}
+
+.categories-shell .monthly-rate strong {
+  color: var(--app-primary);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.categories-shell .adjust-button {
+  --border-color: var(--app-primary);
+  --color: var(--app-primary);
+  margin: 0;
+}
+
+.categories-shell .category-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.65rem;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+}
+
+.categories-shell .category-state h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.15rem;
+}
+
+.categories-shell .category-state p {
+  margin: 0;
+  color: var(--app-muted);
+  line-height: 1.55;
+}
+
+.categories-shell .category-empty-icon {
+  font-size: 1.5rem;
+}
+
+.category-modal-shell {
+  width: min(100% - 1.5rem, 42rem);
+  margin: 0 auto;
+  padding: 1rem 0 2rem;
+}
+
+.category-modal-shell .category-form {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.25rem, 5vw, 2rem);
+}
+
+.category-modal-shell .modal-heading h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.category-modal-shell .modal-heading > p:last-child {
+  margin: 0.45rem 0 0;
+  color: var(--app-muted);
+  line-height: 1.5;
+}
+
+.category-modal-shell .current-rate-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: var(--app-radius-control);
+  padding: 0.8rem 0.9rem;
+  background: var(--app-aqua);
+  color: var(--app-text);
+  font-size: 0.85rem;
+}
+
+.category-modal-shell .current-rate-note strong {
+  color: var(--app-primary);
+  font-size: 1.05rem;
+}
+
+.category-modal-shell .form-error {
+  margin: 0;
+  border: 1px solid var(--app-danger-border);
+  border-radius: var(--app-radius-control);
+  padding: 0.7rem 0.85rem;
+  background: var(--app-danger-surface);
+  color: var(--app-danger);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.category-modal-shell .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.category-modal-shell .modal-actions ion-button {
+  min-height: 3rem;
+}
+
+@media (max-width: 760px) {
+  .categories-shell .category-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .categories-shell {
+    width: min(100% - 1.5rem, 76rem);
+  }
+
+  .categories-shell .page-heading {
+    margin-bottom: 1.25rem;
+  }
+
+  .category-modal-shell .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .category-modal-shell .modal-actions ion-button {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+.categories-shell .record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+

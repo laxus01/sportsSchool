@@ -1,0 +1,39 @@
+<div class="app-date-input">
+  <span class="app-date-input-label">{{ label }}</span>
+  <ion-datetime-button
+    [datetime]="pickerId"
+    [disabled]="disabled()"
+    [attr.aria-label]="'Seleccionar ' + label.toLocaleLowerCase()"
+  ></ion-datetime-button>
+
+  @if (helperText && !invalid) {
+    <small class="app-date-input-help">{{ helperText }}</small>
+  }
+  @if (invalid && errorText) {
+    <small class="app-date-input-error" role="alert">{{ errorText }}</small>
+  }
+
+  <ion-modal
+    class="app-date-picker-modal"
+    [keepContentsMounted]="true"
+    (didDismiss)="handleDismiss()"
+  >
+    <ng-template>
+      <ion-datetime
+        [id]="pickerId"
+        presentation="date"
+        [value]="datePickerValue"
+        [min]="min"
+        [max]="max"
+        locale="es-CO"
+        [firstDayOfWeek]="1"
+        [showDefaultButtons]="true"
+        [showDefaultTitle]="true"
+        doneText="Listo"
+        cancelText="Cancelar"
+        [disabled]="disabled()"
+        (ionChange)="handleDateChange($event)"
+      ></ion-datetime>
+    </ng-template>
+  </ion-modal>
+</div>

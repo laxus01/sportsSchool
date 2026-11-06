@@ -1,0 +1,97 @@
+:root {
+  color-scheme: light;
+
+  --app-primary: #02929a;
+  --app-primary-hover: #027f87;
+  --app-primary-pressed: #027b82;
+  --app-aqua: #d9eff0;
+  --app-canvas: #e6f4f5;
+  --app-surface: #ffffff;
+  --app-text: #2d3434;
+  --app-muted: #667174;
+  --app-border: #cfd3d3;
+  --app-danger: #b84a45;
+  --app-danger-surface: #fff4f2;
+  --app-danger-border: rgb(184 74 69 / 22%);
+
+  --app-font-family: 'Plus Jakarta Sans', Jakarta, 'Avenir Next', 'Segoe UI', sans-serif;
+  --app-radius-control: 0.7rem;
+  --app-radius-card: 1.15rem;
+  --app-shadow-card: 0 0.8rem 2.5rem rgb(45 52 52 / 10%);
+
+  --ion-font-family: var(--app-font-family);
+  --ion-color-primary: var(--app-primary);
+  --ion-color-primary-rgb: 2, 146, 154;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: var(--app-primary-pressed);
+  --ion-color-primary-tint: #20a4aa;
+}
+
+.ion-color-primary {
+  --ion-color-base: var(--ion-color-primary);
+  --ion-color-base-rgb: var(--ion-color-primary-rgb);
+  --ion-color-contrast: var(--ion-color-primary-contrast);
+  --ion-color-contrast-rgb: var(--ion-color-primary-contrast-rgb);
+  --ion-color-shade: var(--ion-color-primary-shade);
+  --ion-color-tint: var(--ion-color-primary-tint);
+}
+
+body {
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+}
+
+ion-button {
+  --border-radius: var(--app-radius-control);
+  font-family: var(--app-font-family);
+  text-transform: none;
+}
+
+ion-input,
+ion-select,
+ion-textarea {
+  --background: var(--app-surface);
+  --border-color: var(--app-border);
+  --border-radius: var(--app-radius-control);
+  --color: var(--app-text);
+  --highlight-color-focused: var(--app-primary);
+  --highlight-color-invalid: var(--app-danger);
+  --highlight-color-valid: var(--app-muted);
+  --padding-bottom: 0.8rem;
+  --padding-end: 0.9rem;
+  --padding-start: 0.9rem;
+  --padding-top: 0.8rem;
+  font-family: var(--app-font-family);
+}
+
+ion-toolbar,
+ion-item,
+ion-card {
+  --background: var(--app-surface);
+  --border-color: var(--app-border);
+  --color: var(--app-text);
+}
+
+ion-card {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-card);
+  box-shadow: var(--app-shadow-card);
+}
+
+.app-page {
+  --background: var(--app-canvas);
+  color: var(--app-text);
+}
+
+.app-card {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-card);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-card);
+  color: var(--app-text);
+}
+
+.app-muted {
+  color: var(--app-muted);
+}

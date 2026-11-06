@@ -1,0 +1,90 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/gestion/medios-de-pago"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver a medios de pago"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ editingId() ? 'Editar medio de pago' : 'Nuevo medio de pago' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <main class="payment-method-form-shell">
+    <header class="form-heading">
+      <p class="section-kicker">ADMINISTRACIÓN</p>
+      <h1>{{ editingId() ? 'Editar medio de pago' : 'Registrar medio de pago' }}</h1>
+      <p>Agrega el banco o canal donde recibes las transferencias.</p>
+    </header>
+
+    <form
+      class="payment-method-form app-card"
+      [formGroup]="form"
+      (ngSubmit)="save()"
+    >
+      <div class="form-section-heading">
+        <h2>Información del medio</h2>
+        <p>
+          Este nombre aparecerá al seleccionar la entidad en un pago por
+          transferencia.
+        </p>
+      </div>
+
+      <div class="form-field">
+        <ion-input
+          label="Medio de pago"
+          labelPlacement="stacked"
+          fill="outline"
+          formControlName="name"
+          type="text"
+          autocomplete="off"
+          placeholder="Ej. Banco de Bogotá"
+          errorText="Ingresa el medio de pago"
+        ></ion-input>
+      </div>
+
+      <div class="form-field">
+        <ion-select
+          label="Tipo de medio"
+          labelPlacement="stacked"
+          fill="outline"
+          interface="action-sheet"
+          formControlName="type"
+        >
+          @for (type of methodTypes; track type.value) {
+            <ion-select-option [value]="type.value">{{ type.label }}</ion-select-option>
+          }
+        </ion-select>
+      </div>
+
+      @if (editingId()) {
+        <div class="form-field">
+          <ion-toggle formControlName="active" labelPlacement="end">
+            Activo
+          </ion-toggle>
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <p class="form-error" role="alert">{{ errorMessage() }}</p>
+      }
+
+      <div class="form-actions">
+        <ion-button
+          type="button"
+          fill="clear"
+          class="cancel-button"
+          (click)="cancel()"
+        >
+          Cancelar
+        </ion-button>
+        <ion-button type="submit" color="primary" [disabled]="isSaving()">
+          {{ isSaving() ? 'Guardando…' : 'Guardar medio de pago' }}
+        </ion-button>
+      </div>
+    </form>
+  </main>
+</ion-content>

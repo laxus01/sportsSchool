@@ -1,0 +1,198 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/home"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver al panel"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>Acudientes</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <ion-fab slot="fixed" vertical="top" horizontal="end" class="page-action-fab">
+    <ion-fab-button (click)="addCaregiver()" aria-label="Agregar acudiente">
+      <ion-icon [icon]="icons.addOutline"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <main class="caregivers-shell">
+    <header class="page-heading">
+      <div>
+        <p class="section-kicker">PERSONAS</p>
+        <h1>Acudientes</h1>
+        <p>Responsables y contactos vinculados a los deportistas.</p>
+      </div>
+    </header>
+
+    <ion-searchbar
+      class="caregiver-search"
+      placeholder="Buscar por nombre, identificación o teléfono"
+      aria-label="Buscar acudientes"
+      [value]="searchTerm()"
+      (ionInput)="updateSearch($event)"
+      debounce="150"
+    ></ion-searchbar>
+
+    @if (isLoading()) {
+      <section class="app-card list-state" aria-live="polite">
+        <p class="app-muted">Cargando acudientes…</p>
+      </section>
+    } @else if (errorMessage()) {
+      <section class="app-card list-state" role="alert">
+        <h2>No se pudo abrir la lista</h2>
+        <p>{{ errorMessage() }}</p>
+      </section>
+    } @else if (caregivers().length === 0) {
+      <section class="app-card list-state">
+        <span class="empty-icon" aria-hidden="true">
+          <ion-icon [icon]="icons.personOutline"></ion-icon>
+        </span>
+        <h2>Aún no hay acudientes</h2>
+        <p>Agrega el primer responsable para vincularlo con un deportista.</p>
+      </section>
+    } @else if (filteredCaregivers().length === 0) {
+      <section class="app-card list-state">
+        <h2>No encontramos coincidencias</h2>
+        <p>Prueba con otro nombre, documento o teléfono.</p>
+      </section>
+    } @else {
+      <div class="caregiver-grid">
+        @for (caregiver of filteredCaregivers(); track caregiver.id) {
+          <article class="caregiver-card app-card">
+            <header class="caregiver-card-heading">
+              <span class="caregiver-avatar" aria-hidden="true">
+                <ion-icon [icon]="icons.personOutline"></ion-icon>
+              </span>
+              <div class="caregiver-identity">
+                <h2>{{ caregiver.nombres }} {{ caregiver.apellidos }}</h2>
+                <p>
+                  <span>Identificación</span>
+                  {{ formatIdentification(caregiver) || 'No registrada' }}
+                </p>
+              </div>
+            </header>
+
+            <dl class="caregiver-details">
+              <div>
+                <dt>
+                  <ion-icon [icon]="icons.peopleOutline" aria-hidden="true"></ion-icon>
+                  Deportista y parentesco
+                </dt>
+                <dd>
+                  {{ formatRelationships(caregiver) || 'Sin vínculo asignado' }}
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <ion-icon [icon]="icons.callOutline" aria-hidden="true"></ion-icon>
+                  Teléfono
+                </dt>
+                <dd>{{ caregiver.telefono }}</dd>
+              </div>
+              <div>
+                <dt>
+                  <ion-icon [icon]="icons.locationOutline" aria-hidden="true"></ion-icon>
+                  Dirección
+                </dt>
+                <dd>{{ caregiver.direccion || 'No registrada' }}</dd>
+              </div>
+            </dl>
+
+            <div class="record-actions">
+              <ion-button
+                type="button"
+                fill="clear"
+                size="small"
+                (click)="editCaregiver(caregiver)"
+                [attr.aria-label]="'Editar ' + caregiver.nombres"
+              >
+                <ion-icon slot="start" [icon]="icons.pencilOutline"></ion-icon>
+                Editar
+              </ion-button>
+              <ion-button
+                type="button"
+                fill="clear"
+                size="small"
+                color="danger"
+                (click)="openDeleteCaregiver(caregiver)"
+                [attr.aria-label]="'Eliminar ' + caregiver.nombres"
+              >
+                <ion-icon slot="start" [icon]="icons.trashOutline"></ion-icon>
+                Eliminar
+              </ion-button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </main>
+</ion-content>
+
+<ion-modal
+  [isOpen]="isDeleteModalOpen()"
+  (didDismiss)="closeDeleteModal()"
+  [backdropDismiss]="!isDeleting()"
+>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting()"
+            aria-label="Cerrar eliminación"
+          >
+            <ion-icon slot="icon-only" [icon]="icons.chevronBackOutline"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+        <ion-title>Eliminar acudiente</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="app-page">
+      <section class="confirm-dialog app-card">
+        @if (caregiverToDelete(); as caregiver) {
+          <p>
+            Vas a eliminar a
+            <strong>{{ caregiver.nombres }} {{ caregiver.apellidos }}</strong>.
+          </p>
+        }
+        @if (isCheckingDelete()) {
+          <p class="app-muted">Revisando vínculos…</p>
+        } @else if (deleteBlockReason()) {
+          <p class="form-error" role="alert">{{ deleteBlockReason() }}</p>
+        } @else {
+          <p>Esta acción no se puede deshacer.</p>
+        }
+        @if (deleteError()) {
+          <p class="form-error" role="alert">{{ deleteError() }}</p>
+        }
+        <div class="modal-actions">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting()"
+          >
+            Cancelar
+          </ion-button>
+          @if (!deleteBlockReason()) {
+            <ion-button
+              type="button"
+              color="danger"
+              [disabled]="isDeleting() || isCheckingDelete()"
+              (click)="confirmDeleteCaregiver()"
+            >
+              {{ isDeleting() ? 'Eliminando…' : 'Eliminar' }}
+            </ion-button>
+          }
+        </div>
+      </section>
+    </ion-content>
+  </ng-template>
+</ion-modal>

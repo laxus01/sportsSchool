@@ -1,0 +1,301 @@
+.athlete-form-shell {
+  width: min(100% - 2rem, 58rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 3rem) 0;
+}
+
+.athlete-form-shell .form-heading {
+  margin-bottom: 1.5rem;
+}
+
+.athlete-form-shell .section-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.athlete-form-shell .form-heading h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.athlete-form-shell .form-heading > p:last-child,
+.athlete-form-shell .form-section-heading > p {
+  margin: 0.45rem 0 0;
+  color: var(--app-muted);
+  line-height: 1.55;
+}
+
+.athlete-form-shell .athlete-form {
+  display: grid;
+  gap: 1.2rem;
+  padding: clamp(1.25rem, 5vw, 2rem);
+}
+
+.athlete-form-shell .form-section {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.athlete-form-shell .form-section + .form-section {
+  border-top: 1px solid var(--app-border);
+  padding-top: 1.1rem;
+}
+
+.athlete-form-shell .form-section-heading h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.athlete-form-shell .form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.athlete-form-shell .form-field ion-input,
+.athlete-form-shell .form-field ion-select {
+  --background: var(--app-surface);
+  --border-color: var(--app-border);
+  --border-radius: var(--app-radius-control);
+  --color: var(--app-text);
+  --highlight-color-focused: var(--app-primary);
+  --highlight-color-invalid: var(--app-danger);
+  font-size: 1rem;
+}
+
+.athlete-form-shell .photo-placeholder,
+.athlete-form-shell .photo-preview {
+  position: relative;
+  display: grid;
+  width: 8rem;
+  height: 8rem;
+  place-items: center;
+  overflow: hidden;
+  border: 1px dashed var(--app-border);
+  border-radius: var(--app-radius-card);
+  background: var(--app-aqua);
+  color: var(--app-primary);
+}
+
+.athlete-form-shell .photo-placeholder ion-icon {
+  font-size: 2rem;
+}
+
+.athlete-form-shell .photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.athlete-form-shell .remove-photo {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  --background: var(--app-surface);
+  --border-radius: 50%;
+  --color: var(--app-danger);
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+}
+
+.athlete-form-shell .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.athlete-form-shell .photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.athlete-form-shell .photo-actions ion-button {
+  --border-color: var(--app-border);
+  --color: var(--app-primary);
+  margin: 0;
+}
+
+.athlete-form-shell .field-hint {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.athlete-form-shell .form-hint {
+  margin: 0;
+  border-radius: var(--app-radius-control);
+  padding: 0.7rem 0.85rem;
+  background: var(--app-aqua);
+  color: var(--app-text);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.athlete-form-shell .form-hint a {
+  color: var(--app-primary);
+  font-weight: 700;
+}
+
+.athlete-form-shell .guardian-links {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.athlete-form-shell .guardian-link-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.7rem;
+}
+
+.athlete-form-shell .remove-guardian {
+  --color: var(--app-muted);
+  --padding-start: 0;
+  --padding-end: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  min-height: 1.6rem;
+  margin: 0;
+}
+
+.athlete-form-shell .guardian-picker {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+}
+
+.athlete-form-shell .guardian-picker-label {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+}
+
+.athlete-form-shell .guardian-search {
+  --background: var(--app-surface);
+  --border-radius: var(--app-radius-control);
+  --box-shadow: none;
+  --color: var(--app-text);
+  --icon-color: var(--app-muted);
+  --placeholder-color: var(--app-muted);
+  min-height: 2.9rem;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-control);
+  padding: 0;
+}
+
+.athlete-form-shell .guardian-options {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-control);
+  background: var(--app-surface);
+  padding: 0;
+}
+
+.athlete-form-shell .guardian-options ion-item {
+  --background: transparent;
+  --color: var(--app-text);
+  --min-height: 2.6rem;
+  font-size: 0.88rem;
+}
+
+.athlete-form-shell .guardian-options ion-item + ion-item {
+  border-top: 1px solid var(--app-border);
+}
+
+.athlete-form-shell .guardian-selected {
+  display: flex;
+  min-height: 2.9rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-control);
+  background: var(--app-surface);
+  padding: 0.35rem 0.45rem 0.35rem 0.85rem;
+}
+
+.athlete-form-shell .guardian-selected-name {
+  overflow: hidden;
+  color: var(--app-text);
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.athlete-form-shell .change-guardian {
+  --color: var(--app-muted);
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.athlete-form-shell .guardian-picker-error {
+  margin: 0;
+  color: var(--app-danger);
+  font-size: 0.78rem;
+}
+
+.athlete-form-shell .form-error {
+  margin: 0;
+  border: 1px solid var(--app-danger-border);
+  border-radius: var(--app-radius-control);
+  padding: 0.7rem 0.85rem;
+  background: var(--app-danger-surface);
+  color: var(--app-danger);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.athlete-form-shell .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  border-top: 1px solid var(--app-border);
+  padding-top: 1rem;
+}
+
+.athlete-form-shell .form-actions ion-button {
+  min-height: 3rem;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .athlete-form-shell {
+    width: min(100% - 1.5rem, 58rem);
+  }
+
+  .athlete-form-shell .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .athlete-form-shell .guardian-link-row {
+    grid-template-columns: 1fr;
+  }
+
+  .athlete-form-shell .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .athlete-form-shell .form-actions ion-button {
+    width: 100%;
+    margin: 0;
+  }
+}
