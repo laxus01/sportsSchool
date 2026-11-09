@@ -9,6 +9,17 @@ export interface AthleteBalance {
   saldo_pendiente: number;
 }
 
+export interface AthleteFinancialObligation {
+  id: string;
+  tipo: 'mensualidad' | 'inscripcion';
+  periodo: string | null;
+  fecha_vencimiento: string | null;
+  monto_pesos: number;
+  pagado_pesos: number;
+  pendiente_pesos: number;
+  orden: string;
+}
+
 export interface FinancialSummary {
   collectedThisMonth: number;
   totalPending: number;
@@ -20,6 +31,72 @@ type DatabaseConnection = Awaited<ReturnType<DatabaseService['getConnection']>>;
 
 @Injectable({ providedIn: 'root' })
 export class FinancialSummaryService {
+  async loadAthleteObligations(
+    database: DatabaseConnection,
+    athleteId: string,
+  ): Promise<AthleteFinancialObligation[]> {
+    const result = await database.query(
+      `SELECT
+         id,
+         tipo,
+         periodo,
+         fecha_vencimiento,
+         monto_pesos,
+         pagado_pesos,
+         monto_pesos - pagado_pesos AS pendiente_pesos,
+         COALESCE(fecha_vencimiento, periodo) AS orden
+       FROM (
+         SELECT
+           m.id,
+           'mensualidad' AS tipo,
+           m.periodo,
+           m.fecha_vencimiento,
+           m.monto_pesos,
+           COALESCE((
+             SELECT SUM(pm.monto_aplicado_pesos)
+             FROM pago_mensualidad pm
+             JOIN pagos p ON p.id = pm.pago_id
+             WHERE pm.mensualidad_id = m.id
+               AND p.estado = 'registrado'
+           ), 0) AS pagado_pesos
+         FROM mensualidades m
+         WHERE m.deportista_id = ? AND m.estado = 'activa'
+         UNION ALL
+         SELECT
+           i.id,
+           'inscripcion' AS tipo,
+           NULL AS periodo,
+           i.fecha_inscripcion AS fecha_vencimiento,
+           i.monto_pesos,
+           COALESCE((
+             SELECT SUM(pi.monto_aplicado_pesos)
+             FROM pago_inscripcion pi
+             JOIN pagos p ON p.id = pi.pago_id
+             WHERE pi.inscripcion_id = i.id
+               AND p.estado = 'registrado'
+           ), 0) AS pagado_pesos
+         FROM inscripciones i
+         WHERE i.deportista_id = ? AND i.estado = 'activa'
+       )
+       WHERE monto_pesos > pagado_pesos
+       ORDER BY orden, tipo`,
+      [athleteId, athleteId],
+    );
+
+    return (result.values ?? []).map((row) => {
+      const obligation = row as AthleteFinancialObligation;
+      const amount = Number(obligation.monto_pesos);
+      const paid = Number(obligation.pagado_pesos);
+      return {
+        ...obligation,
+        monto_pesos: amount,
+        pagado_pesos: paid,
+        pendiente_pesos: amount - paid,
+        orden: String(obligation.orden),
+      };
+    });
+  }
+
   async loadSummary(
     database: DatabaseConnection,
     today: string,

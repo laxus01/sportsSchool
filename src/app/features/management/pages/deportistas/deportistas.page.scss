@@ -136,6 +136,137 @@
   line-height: 1.5;
 }
 
+.financial-dialog {
+  display: grid;
+  gap: 0.9rem;
+  width: min(100% - 1.5rem, 38rem);
+  margin: 1rem auto;
+  padding-bottom: 1.5rem;
+}
+
+.financial-dialog-heading {
+  padding: 0.25rem 0.15rem;
+}
+
+.financial-dialog-heading .section-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.financial-dialog-heading h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.2rem;
+}
+
+.financial-dialog-heading p:last-child {
+  margin: 0.3rem 0 0;
+  color: var(--app-muted);
+}
+
+.financial-state,
+.financial-total,
+.financial-obligation {
+  padding: 1.1rem;
+}
+
+.financial-state {
+  text-align: center;
+}
+
+.financial-state h3,
+.financial-state p {
+  margin: 0;
+}
+
+.financial-state h3 {
+  color: var(--app-primary);
+}
+
+.financial-state p {
+  margin-top: 0.35rem;
+  color: var(--app-muted);
+}
+
+.financial-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--app-muted);
+}
+
+.financial-total strong {
+  color: var(--app-text);
+  font-size: 1.2rem;
+}
+
+.financial-obligations {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.financial-obligation header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.financial-obligation h3 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 0.95rem;
+}
+
+.financial-status {
+  flex: 0 0 auto;
+  color: var(--app-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.financial-status--overdue {
+  color: var(--ion-color-danger);
+}
+
+.financial-obligation-date {
+  margin: 0.45rem 0;
+  color: var(--app-muted);
+  font-size: 0.8rem;
+}
+
+.financial-obligation dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.8rem 0 0;
+}
+
+.financial-obligation dl div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.financial-obligation dt {
+  color: var(--app-muted);
+  font-size: 0.72rem;
+}
+
+.financial-obligation dd {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.financial-obligation-balance dd {
+  color: var(--app-primary);
+}
+
 .athletes-shell .list-state {
   display: grid;
   justify-items: center;
@@ -170,5 +301,9 @@
 @media (max-width: 540px) {
   .athletes-shell {
     width: min(100% - 1.5rem, 76rem);
+  }
+
+  .financial-obligation dl {
+    grid-template-columns: 1fr;
   }
 }

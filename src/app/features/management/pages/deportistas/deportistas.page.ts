@@ -3,6 +3,7 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
   addOutline,
+  cardOutline,
   chevronBackOutline,
   pencilOutline,
   personOutline,
@@ -11,6 +12,10 @@ import {
 
 import { DatabaseService } from '../../../../database/database.service';
 import { AuthService } from '../../../auth/services/auth.service';
+import {
+  FinancialSummaryService,
+  type AthleteFinancialObligation,
+} from '../../financial-summary.service';
 
 interface AthleteRecord {
   id: string;
@@ -39,8 +44,10 @@ export class DeportistasPage {
   private readonly database = inject(DatabaseService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly financialSummary = inject(FinancialSummaryService);
 
   readonly personIcon = personOutline;
+  readonly financialIcon = cardOutline;
   readonly backIcon = chevronBackOutline;
   readonly editIcon = pencilOutline;
   readonly deleteIcon = trashOutline;
@@ -58,6 +65,11 @@ export class DeportistasPage {
   readonly modalError = signal('');
   readonly selectedAthlete = signal<AthleteRecord | null>(null);
   readonly isRetirementModalOpen = signal(false);
+  readonly selectedFinancialAthlete = signal<AthleteRecord | null>(null);
+  readonly financialObligations = signal<AthleteFinancialObligation[]>([]);
+  readonly isFinancialStatusOpen = signal(false);
+  readonly isLoadingFinancialStatus = signal(false);
+  readonly financialStatusError = signal('');
   readonly athleteToDelete = signal<AthleteRecord | null>(null);
   readonly isDeleteModalOpen = signal(false);
   readonly deleteBlockReason = signal<string | null>(null);
@@ -65,6 +77,18 @@ export class DeportistasPage {
   readonly isDeleting = signal(false);
   readonly deleteError = signal('');
   readonly today = localDateString();
+  private financialStatusRequest = 0;
+  private readonly currencyFormatter = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  });
+  readonly totalFinancialBalance = computed(() =>
+    this.financialObligations().reduce(
+      (total, obligation) => total + obligation.pendiente_pesos,
+      0,
+    ),
+  );
   readonly retirementForm = new FormGroup({
     fechaRetiro: new FormControl(this.today, {
       nonNullable: true,
@@ -97,6 +121,72 @@ export class DeportistasPage {
 
   async editAthlete(athlete: AthleteRecord): Promise<void> {
     await this.router.navigate(['/gestion/deportistas/editar', athlete.id]);
+  }
+
+  async openFinancialStatus(athlete: AthleteRecord): Promise<void> {
+    const request = ++this.financialStatusRequest;
+    this.selectedFinancialAthlete.set(athlete);
+    this.financialObligations.set([]);
+    this.financialStatusError.set('');
+    this.isLoadingFinancialStatus.set(true);
+    this.isFinancialStatusOpen.set(true);
+
+    try {
+      const database = await this.database.getConnection();
+      const obligations = await this.financialSummary.loadAthleteObligations(
+        database,
+        athlete.id,
+      );
+      if (request === this.financialStatusRequest) {
+        this.financialObligations.set(obligations);
+      }
+    } catch {
+      if (request === this.financialStatusRequest) {
+        this.financialStatusError.set(
+          'No se pudo consultar el estado financiero del deportista.',
+        );
+      }
+    } finally {
+      if (request === this.financialStatusRequest) {
+        this.isLoadingFinancialStatus.set(false);
+      }
+    }
+  }
+
+  closeFinancialStatus(): void {
+    this.financialStatusRequest += 1;
+    this.isFinancialStatusOpen.set(false);
+    this.selectedFinancialAthlete.set(null);
+    this.financialObligations.set([]);
+    this.financialStatusError.set('');
+    this.isLoadingFinancialStatus.set(false);
+  }
+
+  formatAmount(amount: number): string {
+    return this.currencyFormatter.format(amount);
+  }
+
+  financialObligationLabel(obligation: AthleteFinancialObligation): string {
+    if (obligation.tipo === 'inscripcion') {
+      return 'Inscripción';
+    }
+    const match = /^(\d{4})-(\d{2})$/.exec(obligation.periodo ?? '');
+    if (!match) {
+      return 'Mensualidad';
+    }
+    const periodDate = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+    return `Mensualidad ${new Intl.DateTimeFormat('es-CO', {
+      month: 'long',
+      year: 'numeric',
+    }).format(periodDate)}`;
+  }
+
+  isOverdue(obligation: AthleteFinancialObligation): boolean {
+    return (
+      obligation.tipo === 'mensualidad' &&
+      obligation.fecha_vencimiento !== null &&
+      obligation.fecha_vencimiento < this.today
+    );
   }
 
   openRetirement(athlete: AthleteRecord): void {
