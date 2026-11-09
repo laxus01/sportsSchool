@@ -30,7 +30,7 @@ export class AuthService {
   }
 
   async hasAccounts(): Promise<boolean> {
-    const connection = await this.database.getConnection();
+    const connection = await this.database.getMaintenanceConnection();
     const result = await connection.query(
       'SELECT COUNT(*) AS total FROM usuarios',
     );
@@ -44,7 +44,7 @@ export class AuthService {
 
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const hash = await this.derivePassword(password, salt, PASSWORD_ITERATIONS);
-    const connection = await this.database.getConnection();
+    const connection = await this.database.getMaintenanceConnection();
 
     await connection.beginTransaction();
     try {
@@ -78,7 +78,7 @@ export class AuthService {
 
   async login(username: string, password: string): Promise<boolean> {
     const normalizedUsername = this.normalizeUsername(username);
-    const connection = await this.database.getConnection();
+    const connection = await this.database.getMaintenanceConnection();
     const result = await connection.query(
       `SELECT nombre_usuario, hash_clave, salt, iteraciones, activo
        FROM usuarios

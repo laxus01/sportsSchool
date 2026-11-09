@@ -1,0 +1,150 @@
+ion-toolbar {
+  --background: var(--app-surface);
+  --color: var(--app-text);
+}
+
+ion-content {
+  --background: var(--app-canvas);
+}
+
+.license-shell {
+  display: grid;
+  width: min(100% - 2rem, 52rem);
+  gap: 1.5rem;
+  margin: clamp(1.5rem, 6vh, 4rem) auto;
+  padding-bottom: 2rem;
+}
+
+.license-intro {
+  padding: clamp(0.5rem, 3vw, 1.5rem);
+}
+
+.license-kicker,
+.panel-kicker {
+  margin: 0;
+  color: var(--app-primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+
+.license-intro h1 {
+  max-width: 12ch;
+  margin: 0.7rem 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-size: clamp(2.1rem, 7vw, 3.6rem);
+  font-weight: 800;
+  letter-spacing: -0.065em;
+  line-height: 0.98;
+}
+
+.license-intro > p:last-child,
+.status-description,
+.recovery-note,
+.privacy-note {
+  color: var(--app-muted);
+  line-height: 1.55;
+}
+
+.license-panel {
+  display: grid;
+  gap: 1.1rem;
+  border-top: 4px solid var(--app-aqua);
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.status-mark {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #a35b27;
+  box-shadow: 0 0 0 5px rgb(163 91 39 / 12%);
+}
+
+.status-ready {
+  background: #2f7c51;
+  box-shadow: 0 0 0 5px rgb(47 124 81 / 13%);
+}
+
+.status-row h2 {
+  margin: 0.25rem 0 0;
+  color: var(--app-text);
+  font-size: 1.25rem;
+}
+
+.license-intro > p:last-child,
+.status-description,
+.recovery-note,
+.privacy-note {
+  margin: 0;
+}
+
+form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+ion-input {
+  --background: var(--app-surface);
+  --border-color: var(--app-border);
+  --border-radius: 0.85rem;
+  --highlight-color-focused: var(--app-primary);
+}
+
+.action-button {
+  margin: 0;
+  --background: var(--app-primary);
+  --border-radius: 0.85rem;
+  --color: #fff;
+  font-weight: 750;
+}
+
+.recovery-button {
+  justify-self: start;
+  margin: -0.5rem 0 0;
+  --color: var(--app-primary);
+  font-weight: 700;
+}
+
+.license-details {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  background: var(--app-canvas);
+}
+
+.license-details dt {
+  color: var(--app-muted);
+}
+
+.license-details dd {
+  margin: 0;
+  color: var(--app-text);
+  font-weight: 650;
+}
+
+.field-error,
+.form-error {
+  margin: -0.45rem 0 0;
+  color: var(--ion-color-danger);
+  font-size: 0.85rem;
+}
+
+.recovery-note,
+.privacy-note {
+  font-size: 0.84rem;
+}
+
+.privacy-note {
+  padding: 0 1.5rem;
+}

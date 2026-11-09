@@ -42,7 +42,7 @@ export class RestoreService {
       let preventiveUri: string | null = null;
       let replaced = false;
       try {
-        const connection = await this.database.getConnection();
+        const connection = await this.database.getMaintenanceConnection();
         preventiveDump = (
           await this.dumps.exportDump(connection)
         ).dump;
@@ -98,7 +98,7 @@ export class RestoreService {
       return { attempted: true, ok: false };
     }
     try {
-      const connection = await this.database.getConnection();
+      const connection = await this.database.getMaintenanceConnection();
       await this.dumps.importDump(connection, preventiveDump);
       await this.verifyDatabase();
       return { attempted: true, ok: true };

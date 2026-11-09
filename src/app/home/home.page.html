@@ -24,6 +24,29 @@
       <div class="hero-mark" aria-hidden="true">SS</div>
     </section>
 
+    @if (licenseStatus() !== 'ACTIVE' && licenseStatus() !== 'NOT_REQUIRED') {
+      <section
+        class="license-notice app-card"
+        [class.license-notice-blocked]="!licenseCanWrite()"
+        aria-live="polite"
+      >
+        <div>
+          <p class="section-kicker">LICENCIA · {{ licenseStatusLabel }}</p>
+          <p>{{ licenseMessage }}</p>
+        </div>
+        <div class="license-actions">
+          <a class="license-action-primary" routerLink="/licensing">
+            {{ licenseStatus() === 'ACTIVATION_REQUIRED' ? 'Activar' : 'Revisar licencia' }}
+          </a>
+          @if (!licenseCanWrite()) {
+            <a class="license-action-secondary" routerLink="/gestion/respaldo">
+              Respaldo y recuperación
+            </a>
+          }
+        </div>
+      </section>
+    }
+
     <section class="dashboard-intro">
       <div>
         <p class="section-kicker">ESPACIO DE TRABAJO</p>

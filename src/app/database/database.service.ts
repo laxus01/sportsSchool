@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   CapacitorSQLite,
   SQLiteConnection,
@@ -7,6 +7,7 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { defineCustomElements } from 'jeep-sqlite/loader';
 
+import { LicenseWriteAccessService } from './license-write-access.service';
 import {
   INITIAL_MIGRATION_STATEMENTS,
   INITIAL_MIGRATION_VERSION,
@@ -86,9 +87,23 @@ const CURRENT_DATABASE_VERSION =
 @Injectable({ providedIn: 'root' })
 export class DatabaseService {
   private readonly sqlite = new SQLiteConnection(CapacitorSQLite);
+  private readonly writeAccess = inject(LicenseWriteAccessService);
   private initialization?: Promise<SQLiteDBConnection>;
 
-  initialize(): Promise<SQLiteDBConnection> {
+  initialize(): Promise<void> {
+    return this.getRawConnection().then(() => undefined);
+  }
+
+  async getConnection(): Promise<SQLiteDBConnection> {
+    return this.writeAccess.guardConnection(await this.getRawConnection());
+  }
+
+  // Authentication and backup restoration must remain available without a license.
+  getMaintenanceConnection(): Promise<SQLiteDBConnection> {
+    return this.getRawConnection();
+  }
+
+  private getRawConnection(): Promise<SQLiteDBConnection> {
     if (!this.initialization) {
       this.initialization = this.initializeDatabase().catch((error: unknown) => {
         this.initialization = undefined;
@@ -97,10 +112,6 @@ export class DatabaseService {
     }
 
     return this.initialization;
-  }
-
-  async getConnection(): Promise<SQLiteDBConnection> {
-    return this.initialize();
   }
 
   private async initializeDatabase(): Promise<SQLiteDBConnection> {

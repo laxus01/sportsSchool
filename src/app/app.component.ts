@@ -1,5 +1,4 @@
-import { Component, inject } from '@angular/core';
-import { DatabaseService } from './database/database.service';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-root',
@@ -8,11 +7,4 @@ import { DatabaseService } from './database/database.service';
   standalone: false,
 })
 export class AppComponent {
-  private readonly database = inject(DatabaseService);
-
-  constructor() {
-    void this.database.initialize().catch((error: unknown) => {
-      console.error('No se pudo inicializar la base de datos local.', error);
-    });
-  }
 }

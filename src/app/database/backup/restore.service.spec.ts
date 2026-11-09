@@ -101,8 +101,11 @@ describe('RestoreService', () => {
         RestoreService,
         BackupLockService,
         {
-          provide: DatabaseService,
-          useValue: { getConnection: async () => connection },
+        provide: DatabaseService,
+          useValue: {
+            getConnection: async () => connection,
+            getMaintenanceConnection: async () => connection,
+          },
         },
         { provide: SqliteDumpService, useValue: dumps },
         { provide: BackupFileService, useValue: files },

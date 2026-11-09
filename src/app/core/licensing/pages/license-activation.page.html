@@ -1,0 +1,137 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Volver"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Licencia de la escuela</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <main class="license-shell">
+    <section class="license-intro">
+      <p class="license-kicker">SPORTS SCHOOL · LICENCIAMIENTO</p>
+      <h1>Tu escuela, lista para jugar.</h1>
+      <p>
+        La licencia protege el acceso al servicio; los datos deportivos siguen
+        guardados en este dispositivo.
+      </p>
+    </section>
+
+    <section class="license-panel app-card" aria-live="polite">
+      <div class="status-row">
+        <span class="status-mark" [class.status-ready]="canWrite()"></span>
+        <div>
+          <p class="panel-kicker">ESTADO DE LA INSTALACIÓN</p>
+          <h2>{{ statusLabel }}</h2>
+        </div>
+      </div>
+      <p class="status-description">{{ statusDescription }}</p>
+
+      @if (requiresActivationCode) {
+        <form [formGroup]="form" (ngSubmit)="submitActivation()" novalidate>
+          <ion-input
+            label="Código de activación"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="activationCode"
+            type="text"
+            autocomplete="one-time-code"
+            autocapitalize="none"
+            autocorrect="false"
+            inputmode="text"
+            errorText="Ingresa un código válido"
+          ></ion-input>
+          @if (
+            form.controls.activationCode.touched &&
+            form.controls.activationCode.invalid
+          ) {
+            <p class="field-error">
+              El código debe tener entre 20 y 256 caracteres.
+            </p>
+          }
+
+          @if (errorMessage()) {
+            <p class="form-error" role="alert">{{ errorMessage() }}</p>
+          }
+
+          <ion-button
+            class="action-button"
+            type="submit"
+            expand="block"
+            [disabled]="isSubmitting()"
+          >
+            {{ isSubmitting() ? 'Activando…' : 'Activar esta instalación' }}
+          </ion-button>
+        </form>
+      } @else {
+        @if (claims(); as license) {
+          <dl class="license-details">
+            <div>
+              <dt>Tipo</dt>
+              <dd>
+                {{
+                  license.licenseType === 'PERPETUAL'
+                    ? 'Permanente'
+                    : 'Suscripción'
+                }}
+              </dd>
+            </div>
+            @if (license.licenseType === 'SUBSCRIPTION') {
+              <div>
+                <dt>Válida sin conexión hasta</dt>
+                <dd>{{ license.offlineUntil | date: 'medium' : 'UTC' }} UTC</dd>
+              </div>
+            }
+            <div>
+              <dt>Revisión</dt>
+              <dd>{{ license.revision }}</dd>
+            </div>
+          </dl>
+        }
+
+        @if (canRefresh) {
+          <ion-button
+            class="action-button"
+            expand="block"
+            [disabled]="isSubmitting()"
+            (click)="refreshLicense()"
+          >
+            {{ isSubmitting() ? 'Validando…' : 'Validar ahora' }}
+          </ion-button>
+        }
+
+        @if (errorMessage()) {
+          <p class="form-error" role="alert">{{ errorMessage() }}</p>
+        }
+      }
+
+      @if (!canWrite()) {
+        <p class="recovery-note">
+          Las operaciones están en modo de solo lectura. La consulta, el
+          respaldo y la restauración de datos permanecen disponibles.
+        </p>
+        <ion-button
+          class="recovery-button"
+          fill="clear"
+          routerLink="/gestion/respaldo"
+        >
+          Abrir respaldo y recuperación
+        </ion-button>
+      } @else {
+        <ion-button
+          class="recovery-button"
+          fill="clear"
+          routerLink="/home"
+        >
+          Volver a la escuela
+        </ion-button>
+      }
+    </section>
+
+    <p class="privacy-note">
+      La clave privada de esta instalación no sale del Android. Los datos de
+      deportistas y pagos locales no se envían al servidor de licencias.
+    </p>
+  </main>
+</ion-content>

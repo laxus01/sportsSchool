@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { AppComponent } from './app.component';
 import { AppModule } from './app.module';
+import { LicenseAccessService } from './core/licensing/license-access.service';
 import { DatabaseService } from './database/database.service';
 
 describe('AppComponent', () => {
@@ -10,6 +11,10 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AppModule],
       providers: [
+        {
+          provide: LicenseAccessService,
+          useValue: { initialize: () => Promise.resolve() },
+        },
         {
           provide: DatabaseService,
           useValue: { initialize: () => Promise.resolve() },

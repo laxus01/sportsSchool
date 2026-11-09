@@ -83,7 +83,7 @@ describe('AuthService', () => {
         AuthService,
         {
           provide: DatabaseService,
-          useValue: { getConnection: async () => connection },
+          useValue: { getMaintenanceConnection: async () => connection },
         },
       ],
     });

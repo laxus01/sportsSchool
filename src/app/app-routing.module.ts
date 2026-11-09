@@ -24,6 +24,14 @@ const routes: Routes = [
       ),
   },
   {
+    path: 'licensing',
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      import('./core/licensing/license.module').then(
+        (module) => module.LicenseModule,
+      ),
+  },
+  {
     path: '',
     redirectTo: 'auth/login',
     pathMatch: 'full',

@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
+import { LicenseAccessService } from '../core/licensing/license-access.service';
 import { HomePageModule } from './home.module';
 import { HomePage } from './home.page';
 
@@ -10,7 +12,16 @@ describe('HomePage', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [HomePageModule, RouterModule.forRoot([])]
+      imports: [HomePageModule, RouterModule.forRoot([])],
+      providers: [
+        {
+          provide: LicenseAccessService,
+          useValue: {
+            status: signal('NOT_REQUIRED'),
+            canWrite: signal(true),
+          },
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(HomePage);
