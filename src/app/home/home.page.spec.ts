@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { signal } from '@angular/core';
+import { signal, WritableSignal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
 import { LicenseAccessService } from '../core/licensing/license-access.service';
@@ -9,16 +9,21 @@ import { HomePage } from './home.page';
 describe('HomePage', () => {
   let component: HomePage;
   let fixture: ComponentFixture<HomePage>;
+  let licenseStatus: WritableSignal<string>;
+  let licenseCanWrite: WritableSignal<boolean>;
 
   beforeEach(async () => {
+    licenseStatus = signal('NOT_REQUIRED');
+    licenseCanWrite = signal(true);
+
     await TestBed.configureTestingModule({
       imports: [HomePageModule, RouterModule.forRoot([])],
       providers: [
         {
           provide: LicenseAccessService,
           useValue: {
-            status: signal('NOT_REQUIRED'),
-            canWrite: signal(true),
+            status: licenseStatus,
+            canWrite: licenseCanWrite,
           },
         },
       ],
@@ -48,6 +53,38 @@ describe('HomePage', () => {
     expect(destinations).toContain('/gestion/respaldo');
     expect(destinations).not.toContain('/gestion/mensualidades');
     expect(destinations).not.toContain('/gestion/inscripciones');
+  });
+
+  it('keeps cards enabled during the subscription grace period', () => {
+    licenseStatus.set('GRACE_PERIOD');
+    licenseCanWrite.set(true);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelectorAll('.module-card-disabled').length,
+    ).toBe(0);
+    expect(
+      fixture.nativeElement.querySelectorAll('a.module-card').length,
+    ).toBe(9);
+  });
+
+  it('disables operational cards without a license or after grace expires', () => {
+    for (const status of ['ACTIVATION_REQUIRED', 'EXPIRED']) {
+      licenseStatus.set(status);
+      licenseCanWrite.set(false);
+      fixture.detectChanges();
+
+      const disabledCards = fixture.nativeElement.querySelectorAll(
+        '.module-card-disabled[aria-disabled="true"]',
+      ) as NodeListOf<HTMLDivElement>;
+      const enabledCards = fixture.nativeElement.querySelectorAll(
+        'a.module-card',
+      ) as NodeListOf<HTMLAnchorElement>;
+
+      expect(disabledCards.length).toBe(8);
+      expect(enabledCards.length).toBe(1);
+      expect(enabledCards[0].getAttribute('href')).toBe('/gestion/respaldo');
+    }
   });
 
   it('exposes logout as an accessible power icon button', () => {

@@ -64,20 +64,39 @@
 
         <div class="module-grid">
           @for (item of group.items; track item.id) {
-            <a
-              class="module-card app-card"
-              [routerLink]="['/gestion', item.id]"
-              [attr.aria-label]="'Abrir módulo ' + item.title"
-            >
-              <span class="module-icon" aria-hidden="true">
-                <ion-icon [icon]="item.icon"></ion-icon>
-              </span>
-              <span class="module-copy">
-                <strong>{{ item.title }}</strong>
-                <small>{{ item.description }}</small>
-              </span>
-              <span class="module-arrow" aria-hidden="true">→</span>
-            </a>
+            @let cardDisabled = !licenseCanWrite() && item.id !== 'respaldo';
+            @if (cardDisabled) {
+              <div
+                class="module-card app-card module-card-disabled"
+                role="link"
+                aria-disabled="true"
+                [attr.aria-label]="'Módulo ' + item.title + ' deshabilitado por la licencia'"
+              >
+                <span class="module-icon" aria-hidden="true">
+                  <ion-icon [icon]="item.icon"></ion-icon>
+                </span>
+                <span class="module-copy">
+                  <strong>{{ item.title }}</strong>
+                  <small>{{ item.description }}</small>
+                </span>
+                <span class="module-arrow" aria-hidden="true">→</span>
+              </div>
+            } @else {
+              <a
+                class="module-card app-card"
+                [routerLink]="['/gestion', item.id]"
+                [attr.aria-label]="'Abrir módulo ' + item.title"
+              >
+                <span class="module-icon" aria-hidden="true">
+                  <ion-icon [icon]="item.icon"></ion-icon>
+                </span>
+                <span class="module-copy">
+                  <strong>{{ item.title }}</strong>
+                  <small>{{ item.description }}</small>
+                </span>
+                <span class="module-arrow" aria-hidden="true">→</span>
+              </a>
+            }
           }
         </div>
       </section>

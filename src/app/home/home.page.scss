@@ -291,6 +291,18 @@
   transform: translateX(3px);
 }
 
+.module-card-disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.75);
+  opacity: 0.52;
+}
+
+.module-card-disabled:hover {
+  border-color: var(--app-border);
+  box-shadow: none;
+  transform: none;
+}
+
 @media (max-width: 900px) {
   .module-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
