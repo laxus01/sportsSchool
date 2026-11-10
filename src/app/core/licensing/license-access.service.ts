@@ -148,7 +148,6 @@ export class LicenseAccessService implements OnDestroy {
       highestRevision: state.highestRevision,
     });
     if (
-      state.installationId !== this.identity.installationId ||
       state.publicKeyThumbprint !== this.identity.publicKeyThumbprint ||
       claims.revision !== state.highestRevision
     ) {
@@ -218,7 +217,6 @@ export class LicenseAccessService implements OnDestroy {
       this.identity = await this.secureStorage.getOrCreateIdentity();
     }
     if (
-      state.installationId !== this.identity.installationId ||
       state.publicKeyThumbprint !== this.identity.publicKeyThumbprint
     ) {
       this.setStatus('INVALID');

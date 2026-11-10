@@ -82,13 +82,13 @@ describe('LicenseAccessService', () => {
     );
   });
 
-  it('allows a valid perpetual grant without consulting a clock or network', async () => {
+  it('allows a valid grant whose server installation id differs from the local identity id', async () => {
     const claims: SignedLicenseClaims = {
       iss: 'https://licenses.example.test',
       aud: 'SPORTS_SCHOOL',
       licenseId: 'license-1',
       schoolId: 'school-1',
-      installationId: 'installation-1',
+      installationId: 'server-installation-1',
       product: 'SPORTS_SCHOOL',
       licenseType: 'PERPETUAL',
       status: 'ACTIVE',
@@ -100,7 +100,7 @@ describe('LicenseAccessService', () => {
     };
     const state: StoredLicenseState = {
       licenseJws: 'header.payload.signature',
-      installationId: 'installation-1',
+      installationId: 'server-installation-1',
       publicKeyThumbprint: 'thumbprint-1',
       highestRevision: 4,
       clock: {
@@ -137,7 +137,7 @@ describe('LicenseAccessService', () => {
       aud: 'SPORTS_SCHOOL',
       licenseId: 'license-1',
       schoolId: 'school-1',
-      installationId: 'installation-1',
+      installationId: 'server-installation-1',
       product: 'SPORTS_SCHOOL',
       licenseType: 'SUBSCRIPTION',
       status: 'ACTIVE',
@@ -154,7 +154,7 @@ describe('LicenseAccessService', () => {
     const elapsedRealtimeMs = 31 * 24 * 60 * 60 * 1000;
     const state: StoredLicenseState = {
       licenseJws: 'signed-license',
-      installationId: 'installation-1',
+      installationId: 'server-installation-1',
       publicKeyThumbprint: 'thumbprint-1',
       highestRevision: 4,
       clock: {
