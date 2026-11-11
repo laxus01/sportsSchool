@@ -11,6 +11,7 @@
   [class.ion-touched]="invalid"
   type="text"
   inputmode="numeric"
+  (beforeinput)="handleBeforeInput($event)"
   (ionInput)="handleInput($event)"
   (ionBlur)="handleBlur()"
 ></ion-input>

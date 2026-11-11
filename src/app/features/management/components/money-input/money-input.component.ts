@@ -61,6 +61,16 @@ export class MoneyInputComponent implements ControlValueAccessor {
     this.disabled.set(isDisabled);
   }
 
+  handleBeforeInput(event: Event): void {
+    const inputEvent = event as InputEvent;
+    const insertedText =
+      inputEvent.data ?? inputEvent.dataTransfer?.getData('text/plain');
+
+    if (insertedText && /\D/.test(insertedText)) {
+      event.preventDefault();
+    }
+  }
+
   handleInput(
     event: CustomEvent<{ value?: string | number | null }>,
   ): void {
