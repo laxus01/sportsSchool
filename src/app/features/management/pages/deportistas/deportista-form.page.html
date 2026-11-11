@@ -58,6 +58,37 @@
           </div>
         </div>
 
+        <div class="form-row">
+          <div class="form-field">
+            <ion-select
+              label="Tipo de identificación"
+              labelPlacement="stacked"
+              fill="outline"
+              interface="action-sheet"
+              formControlName="tipoDocumento"
+              errorText="Selecciona el tipo de identificación"
+            >
+              @for (type of documentTypes; track type.value) {
+                <ion-select-option [value]="type.value">
+                  {{ type.label }}
+                </ion-select-option>
+              }
+            </ion-select>
+          </div>
+          <div class="form-field">
+            <ion-input
+              label="Número de identificación"
+              labelPlacement="stacked"
+              fill="outline"
+              formControlName="numeroDocumento"
+              type="text"
+              autocomplete="off"
+              maxlength="30"
+              errorText="Ingresa el número de identificación"
+            ></ion-input>
+          </div>
+        </div>
+
         <div class="form-field">
           <app-date-input
             label="Fecha de nacimiento"
@@ -76,6 +107,45 @@
             [invalid]="form.controls.fechaIngreso.invalid && form.controls.fechaIngreso.touched"
           ></app-date-input>
         </div>
+      </section>
+
+      <section class="form-section">
+        <div class="form-section-heading">
+          <h2>Afiliación en salud</h2>
+          <p>Selecciona la entidad de salud o IPS a la que está afiliado.</p>
+        </div>
+
+        <div class="health-entity-control">
+          <ion-select
+            label="Entidad de salud o IPS"
+            labelPlacement="stacked"
+            fill="outline"
+            interface="action-sheet"
+            formControlName="entidadSaludId"
+          >
+            <ion-select-option value="">Sin afiliación registrada</ion-select-option>
+            @for (entity of healthEntities(); track entity.id) {
+              <ion-select-option [value]="entity.id">
+                {{ entity.nombre }}
+              </ion-select-option>
+            }
+          </ion-select>
+          <ion-button
+            type="button"
+            fill="outline"
+            class="add-health-entity"
+            [disabled]="isLoadingOptions()"
+            (click)="openHealthEntityModal()"
+            aria-label="Crear entidad de salud"
+          >
+            <ion-icon slot="icon-only" [icon]="addIcon"></ion-icon>
+          </ion-button>
+        </div>
+        @if (!isLoadingOptions() && healthEntities().length === 0) {
+          <p class="field-hint">
+            No hay entidades registradas. Usa el botón + para agregar una.
+          </p>
+        }
       </section>
 
       <section class="form-section">
@@ -359,4 +429,63 @@
       </div>
     </form>
   </main>
+
+  <ion-modal
+    [isOpen]="isHealthEntityModalOpen()"
+    (didDismiss)="closeHealthEntityModal()"
+  >
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Nueva entidad de salud</ion-title>
+          <ion-buttons slot="end">
+            <ion-button
+              type="button"
+              fill="clear"
+              (click)="closeHealthEntityModal()"
+              aria-label="Cerrar"
+            >
+              Cancelar
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <form
+          class="health-entity-form"
+          [formGroup]="healthEntityForm"
+          (ngSubmit)="saveHealthEntity()"
+        >
+          <ion-input
+            label="Nombre de la entidad"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="nombre"
+            type="text"
+            maxlength="120"
+            errorText="Ingresa el nombre de la entidad"
+          ></ion-input>
+          @if (healthEntityError()) {
+            <p class="form-error" role="alert">{{ healthEntityError() }}</p>
+          }
+          <div class="form-actions">
+            <ion-button
+              type="button"
+              fill="clear"
+              (click)="closeHealthEntityModal()"
+            >
+              Cancelar
+            </ion-button>
+            <ion-button
+              type="submit"
+              color="primary"
+              [disabled]="isSavingHealthEntity()"
+            >
+              {{ isSavingHealthEntity() ? 'Guardando…' : 'Crear entidad' }}
+            </ion-button>
+          </div>
+        </form>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 </ion-content>

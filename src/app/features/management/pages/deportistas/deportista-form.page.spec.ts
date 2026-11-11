@@ -47,6 +47,9 @@ describe('DeportistaFormPage', () => {
         if (statement.includes('FROM tarifas_categoria')) {
           return { values: [{ id: 'tariff-1', monto_pesos: 82000 }] };
         }
+        if (statement.includes('FROM entidades_salud')) {
+          return { values: [] };
+        }
         return {
           values: [{ id: 'guardian-1', nombres: 'Ana', apellidos: 'Rojas' }],
         };
@@ -81,6 +84,9 @@ describe('DeportistaFormPage', () => {
     page.form.patchValue({
       nombres: 'Luis',
       apellidos: 'Rojas',
+      tipoDocumento: 'TI',
+      numeroDocumento: '123456789',
+      entidadSaludId: 'health-entity-1',
       fechaNacimiento: '2015-04-12',
       fechaIngreso: page.today,
       categoriaId: 'category-1',
@@ -101,6 +107,9 @@ describe('DeportistaFormPage', () => {
         'category-1',
         'Luis',
         'Rojas',
+        'TI',
+        '123456789',
+        'health-entity-1',
         '2015-04-12',
         'data:image/jpeg;base64,photo',
       ]),
@@ -141,6 +150,32 @@ describe('DeportistaFormPage', () => {
     expect(connection.commitTransaction).toHaveBeenCalledOnce();
   });
 
+  it('creates and selects a health entity from the inline form', async () => {
+    const page = fixture.componentInstance;
+    page.openHealthEntityModal();
+    page.healthEntityForm.controls.nombre.setValue('EPS Deportiva');
+
+    await page.saveHealthEntity();
+
+    expect(connection.run).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO entidades_salud'),
+      ['test-id-1', 'EPS Deportiva'],
+    );
+    expect(page.healthEntities()).toEqual([
+      { id: 'test-id-1', nombre: 'EPS Deportiva' },
+    ]);
+    expect(page.form.controls.entidadSaludId.value).toBe('test-id-1');
+    expect(page.isHealthEntityModalOpen()).toBe(false);
+  });
+
+  it('requires identification but leaves health entity optional', () => {
+    const page = fixture.componentInstance;
+
+    expect(page.form.controls.tipoDocumento.hasError('required')).toBe(true);
+    expect(page.form.controls.numeroDocumento.hasError('required')).toBe(true);
+    expect(page.form.controls.entidadSaludId.valid).toBe(true);
+  });
+
   it('does not generate inscription or monthly charges for a legacy athlete', async () => {
     billingStartDate = '2026-11-01';
     const page = fixture.componentInstance;
@@ -152,6 +187,8 @@ describe('DeportistaFormPage', () => {
     page.form.patchValue({
       nombres: 'Sofía',
       apellidos: 'Vargas',
+      tipoDocumento: 'TI',
+      numeroDocumento: '987654321',
       fechaNacimiento: '2014-08-20',
       fechaIngreso: '2026-10-30',
       categoriaId: 'category-1',

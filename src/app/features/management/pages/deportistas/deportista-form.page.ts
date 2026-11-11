@@ -28,6 +28,11 @@ interface CategoryOption {
   nombre: string;
 }
 
+interface HealthEntityOption {
+  id: string;
+  nombre: string;
+}
+
 interface GuardianOption {
   id: string;
   nombres: string;
@@ -48,6 +53,9 @@ interface AthleteRecord {
   categoria_vigente: string;
   nombres: string;
   apellidos: string;
+  tipo_documento: string | null;
+  numero_documento: string | null;
+  entidad_salud_id: string | null;
   fecha_nacimiento: string;
   fecha_ingreso: string;
   estado: string;
@@ -62,6 +70,9 @@ interface GuardianLinkRecord {
 interface AthleteFormValues {
   nombres: string;
   apellidos: string;
+  tipoDocumento: string;
+  numeroDocumento: string;
+  entidadSaludId: string;
   fechaNacimiento: string;
   fechaIngreso: string;
   categoriaId: string;
@@ -94,11 +105,14 @@ export class DeportistaFormPage implements OnInit {
   private readonly auth = inject(AuthService);
 
   readonly categories = signal<CategoryOption[]>([]);
+  readonly healthEntities = signal<HealthEntityOption[]>([]);
   readonly guardians = signal<GuardianOption[]>([]);
   readonly billingSettings = signal<SchoolBillingSettings | null>(null);
   readonly isLoadingOptions = signal(true);
   readonly isLoadingRecord = signal(false);
   readonly isSaving = signal(false);
+  readonly isSavingHealthEntity = signal(false);
+  readonly isHealthEntityModalOpen = signal(false);
   readonly canEditSchedule = signal(true);
   readonly editingId = signal<string | null>(
     this.route.snapshot.paramMap.get('id'),
@@ -110,6 +124,7 @@ export class DeportistaFormPage implements OnInit {
   readonly photoDataUrl = signal<string | null>(null);
   readonly photoError = signal('');
   readonly errorMessage = signal('');
+  readonly healthEntityError = signal('');
   readonly cameraIcon = cameraOutline;
   readonly galleryIcon = imagesOutline;
   readonly addIcon = addOutline;
@@ -131,6 +146,14 @@ export class DeportistaFormPage implements OnInit {
     'TUTORA',
     'OTRO',
   ];
+  readonly documentTypes = [
+    { value: 'CC', label: 'Cédula de ciudadanía' },
+    { value: 'CE', label: 'Cédula de extranjería' },
+    { value: 'TI', label: 'Tarjeta de identidad' },
+    { value: 'PPT', label: 'Permiso por protección temporal' },
+    { value: 'PAS', label: 'Pasaporte' },
+    { value: 'OTRO', label: 'Otro' },
+  ];
 
   readonly form = new FormGroup({
     nombres: new FormControl('', {
@@ -140,6 +163,21 @@ export class DeportistaFormPage implements OnInit {
     apellidos: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.maxLength(120)],
+    }),
+    tipoDocumento: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    numeroDocumento: new FormControl('', {
+      nonNullable: true,
+      validators: [
+        Validators.required,
+        Validators.pattern(/\S/),
+        Validators.maxLength(30),
+      ],
+    }),
+    entidadSaludId: new FormControl('', {
+      nonNullable: true,
     }),
     fechaNacimiento: new FormControl('', {
       nonNullable: true,
@@ -154,6 +192,16 @@ export class DeportistaFormPage implements OnInit {
       validators: [Validators.required],
     }),
     guardianLinks: new FormArray<GuardianLinkForm>([]),
+  });
+  readonly healthEntityForm = new FormGroup({
+    nombre: new FormControl('', {
+      nonNullable: true,
+      validators: [
+        Validators.required,
+        Validators.pattern(/\S/),
+        Validators.maxLength(120),
+      ],
+    }),
   });
 
   get guardianLinks(): FormArray<GuardianLinkForm> {
@@ -221,6 +269,67 @@ export class DeportistaFormPage implements OnInit {
   removePhoto(): void {
     this.photoDataUrl.set(null);
     this.photoError.set('');
+  }
+
+  openHealthEntityModal(): void {
+    this.healthEntityError.set('');
+    this.healthEntityForm.reset({ nombre: '' });
+    this.isHealthEntityModalOpen.set(true);
+  }
+
+  closeHealthEntityModal(): void {
+    this.isHealthEntityModalOpen.set(false);
+    this.healthEntityError.set('');
+  }
+
+  async saveHealthEntity(): Promise<void> {
+    this.healthEntityForm.markAllAsTouched();
+    if (this.healthEntityForm.invalid || this.isSavingHealthEntity()) {
+      return;
+    }
+
+    const name = this.healthEntityForm.controls.nombre.value.trim();
+    if (!name) {
+      this.healthEntityForm.controls.nombre.setErrors({ required: true });
+      return;
+    }
+
+    const existing = this.healthEntities().find(
+      (entity) => this.normalize(entity.nombre) === this.normalize(name),
+    );
+    if (existing) {
+      this.healthEntityError.set(
+        'Esta entidad ya existe. Selecciónala en la lista.',
+      );
+      return;
+    }
+
+    this.isSavingHealthEntity.set(true);
+    this.healthEntityError.set('');
+    try {
+      const database = await this.database.getConnection();
+      const entity = { id: crypto.randomUUID(), nombre: name };
+      await database.run(
+        `INSERT INTO entidades_salud (id, nombre)
+         VALUES (?, ?)`,
+        [entity.id, entity.nombre],
+      );
+      this.healthEntities.update((entities) =>
+        [...entities, entity].sort((left, right) =>
+          left.nombre.localeCompare(right.nombre, 'es'),
+        ),
+      );
+      this.form.controls.entidadSaludId.setValue(entity.id);
+      this.closeHealthEntityModal();
+    } catch (error) {
+      this.healthEntityError.set(
+        String(error).includes('UNIQUE constraint failed')
+          ? 'Ya existe una entidad de salud con ese nombre.'
+          : 'No se pudo guardar la entidad de salud. Inténtalo de nuevo.',
+      );
+    } finally {
+      this.isSavingHealthEntity.set(false);
+    }
   }
 
   async save(): Promise<void> {
@@ -315,14 +424,18 @@ export class DeportistaFormPage implements OnInit {
       try {
         await database.run(
           `INSERT INTO deportistas
-            (id, categoria_id, nombres, apellidos, fecha_nacimiento,
+            (id, categoria_id, nombres, apellidos, tipo_documento,
+             numero_documento, entidad_salud_id, fecha_nacimiento,
              fecha_ingreso, estado, foto_data_url)
-           VALUES (?, ?, ?, ?, ?, ?, 'activo', ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)`,
           [
             athleteId,
             values.categoriaId,
             values.nombres.trim(),
             values.apellidos.trim(),
+            values.tipoDocumento,
+            values.numeroDocumento.trim(),
+            values.entidadSaludId || null,
             values.fechaNacimiento,
             registrationDate,
             this.photoDataUrl(),
@@ -409,9 +522,13 @@ export class DeportistaFormPage implements OnInit {
       await this.router.navigateByUrl('/gestion/deportistas', {
         replaceUrl: true,
       });
-    } catch {
+    } catch (error) {
       this.errorMessage.set(
-        'No se pudo guardar el deportista. Revisa los datos e inténtalo de nuevo.',
+        String(error).includes(
+          'UNIQUE constraint failed: deportistas.tipo_documento, deportistas.numero_documento',
+        )
+          ? 'Ya existe un deportista con ese tipo y número de identificación.'
+          : 'No se pudo guardar el deportista. Revisa los datos e inténtalo de nuevo.',
       );
     } finally {
       this.isSaving.set(false);
@@ -448,6 +565,9 @@ export class DeportistaFormPage implements OnInit {
            SET categoria_id = ?,
                nombres = ?,
                apellidos = ?,
+               tipo_documento = ?,
+               numero_documento = ?,
+               entidad_salud_id = ?,
                fecha_nacimiento = ?,
                fecha_ingreso = ?,
                foto_data_url = ?,
@@ -457,6 +577,9 @@ export class DeportistaFormPage implements OnInit {
             categoriaId,
             values.nombres.trim(),
             values.apellidos.trim(),
+            values.tipoDocumento,
+            values.numeroDocumento.trim(),
+            values.entidadSaludId || null,
             values.fechaNacimiento,
             fechaIngreso,
             this.photoDataUrl(),
@@ -509,9 +632,13 @@ export class DeportistaFormPage implements OnInit {
       await this.router.navigateByUrl('/gestion/deportistas', {
         replaceUrl: true,
       });
-    } catch {
+    } catch (error) {
       this.errorMessage.set(
-        'No se pudo actualizar el deportista. Inténtalo de nuevo.',
+        String(error).includes(
+          'UNIQUE constraint failed: deportistas.tipo_documento, deportistas.numero_documento',
+        )
+          ? 'Ya existe un deportista con ese tipo y número de identificación.'
+          : 'No se pudo actualizar el deportista. Inténtalo de nuevo.',
       );
     } finally {
       this.isSaving.set(false);
@@ -571,6 +698,7 @@ export class DeportistaFormPage implements OnInit {
   private async loadInitialData(): Promise<void> {
     const tasks = [
       this.loadCategories(),
+      this.loadHealthEntities(),
       this.loadGuardians(),
       this.loadBillingSettings(),
     ];
@@ -618,6 +746,9 @@ export class DeportistaFormPage implements OnInit {
              COALESCE(h.categoria_id, d.categoria_id) AS categoria_vigente,
              d.nombres,
              d.apellidos,
+             d.tipo_documento,
+             d.numero_documento,
+             d.entidad_salud_id,
              d.fecha_nacimiento,
              d.fecha_ingreso,
              d.estado,
@@ -654,6 +785,9 @@ export class DeportistaFormPage implements OnInit {
       this.form.patchValue({
         nombres: athlete.nombres,
         apellidos: athlete.apellidos,
+        tipoDocumento: athlete.tipo_documento ?? '',
+        numeroDocumento: athlete.numero_documento ?? '',
+        entidadSaludId: athlete.entidad_salud_id ?? '',
         fechaNacimiento: athlete.fecha_nacimiento,
         fechaIngreso: athlete.fecha_ingreso,
         categoriaId: athlete.categoria_vigente,
@@ -720,6 +854,23 @@ export class DeportistaFormPage implements OnInit {
       this.categories.set((result.values ?? []) as CategoryOption[]);
     } catch {
       this.errorMessage.set('No se pudieron cargar las categorías.');
+    }
+  }
+
+  private async loadHealthEntities(): Promise<void> {
+    try {
+      const database = await this.database.getConnection();
+      const result = await database.query(
+        `SELECT id, nombre
+         FROM entidades_salud
+         WHERE activa = 1
+         ORDER BY nombre COLLATE NOCASE`,
+      );
+      this.healthEntities.set(
+        (result.values ?? []) as HealthEntityOption[],
+      );
+    } catch {
+      this.errorMessage.set('No se pudieron cargar las entidades de salud.');
     }
   }
 

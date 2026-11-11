@@ -61,6 +61,52 @@
   gap: 0.9rem;
 }
 
+.athlete-form-shell .health-entity-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.athlete-form-shell .add-health-entity {
+  width: 3rem;
+  height: 3rem;
+  margin: 0;
+  --border-color: var(--app-border);
+  --color: var(--app-primary);
+}
+
+.health-entity-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.health-entity-form ion-input {
+  --background: var(--app-surface);
+  --border-color: var(--app-border);
+  --border-radius: var(--app-radius-control);
+  --color: var(--app-text);
+  --highlight-color-focused: var(--app-primary);
+  --highlight-color-invalid: var(--app-danger);
+}
+
+.health-entity-form .form-error {
+  margin: 0;
+  border: 1px solid var(--app-danger-border);
+  border-radius: var(--app-radius-control);
+  padding: 0.7rem 0.85rem;
+  background: var(--app-danger-surface);
+  color: var(--app-danger);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.health-entity-form .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .athlete-form-shell .form-field ion-input,
 .athlete-form-shell .form-field ion-select {
   --background: var(--app-surface);

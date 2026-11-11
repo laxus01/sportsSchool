@@ -44,6 +44,14 @@ import {
   ADDITIONAL_CHARGES_MIGRATION_STATEMENTS,
   ADDITIONAL_CHARGES_MIGRATION_VERSION,
 } from './migrations/009-additional-charges';
+import {
+  HEALTH_ENTITIES_MIGRATION_STATEMENTS,
+  HEALTH_ENTITIES_MIGRATION_VERSION,
+} from './migrations/010-health-entities';
+import {
+  ATHLETE_IDENTIFICATION_MIGRATION_STATEMENTS,
+  ATHLETE_IDENTIFICATION_MIGRATION_VERSION,
+} from './migrations/011-athlete-identification';
 
 const DATABASE_NAME = 'sports_school';
 interface DatabaseMigration {
@@ -87,6 +95,14 @@ const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
   {
     version: ADDITIONAL_CHARGES_MIGRATION_VERSION,
     statements: ADDITIONAL_CHARGES_MIGRATION_STATEMENTS,
+  },
+  {
+    version: HEALTH_ENTITIES_MIGRATION_VERSION,
+    statements: HEALTH_ENTITIES_MIGRATION_STATEMENTS,
+  },
+  {
+    version: ATHLETE_IDENTIFICATION_MIGRATION_VERSION,
+    statements: ATHLETE_IDENTIFICATION_MIGRATION_STATEMENTS,
   },
 ];
 const CURRENT_DATABASE_VERSION =
