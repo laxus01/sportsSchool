@@ -170,6 +170,9 @@ export class DeportistasPage {
     if (obligation.tipo === 'inscripcion') {
       return 'Inscripción';
     }
+    if (obligation.tipo === 'cargo_adicional') {
+      return obligation.descripcion ?? 'Cargo adicional';
+    }
     const match = /^(\d{4})-(\d{2})$/.exec(obligation.periodo ?? '');
     if (!match) {
       return 'Mensualidad';
@@ -270,26 +273,31 @@ export class DeportistasPage {
              AS monthlyCharges,
            (SELECT COUNT(*) FROM inscripciones WHERE deportista_id = ?)
              AS registrations,
+           (SELECT COUNT(*) FROM cargos_adicionales WHERE deportista_id = ?)
+             AS additionalCharges,
            (SELECT COUNT(*) FROM deportista_acudiente WHERE deportista_id = ?)
              AS guardianLinks,
            (SELECT COUNT(*) FROM deportista_categoria_historial
              WHERE deportista_id = ?)
              AS categoryHistory`,
-        [athlete.id, athlete.id, athlete.id, athlete.id],
+        [athlete.id, athlete.id, athlete.id, athlete.id, athlete.id],
       );
       const row = result.values?.[0] as
         | {
             monthlyCharges: number;
             registrations: number;
+            additionalCharges: number;
             guardianLinks: number;
             categoryHistory: number;
           }
         | undefined;
       const financialRecords =
-        Number(row?.monthlyCharges ?? 0) + Number(row?.registrations ?? 0);
+        Number(row?.monthlyCharges ?? 0) +
+        Number(row?.registrations ?? 0) +
+        Number(row?.additionalCharges ?? 0);
       if (financialRecords > 0) {
         this.deleteBlockReason.set(
-          'No se puede eliminar: tiene mensualidades o inscripciones registradas.',
+          'No se puede eliminar: tiene obligaciones financieras registradas.',
         );
       } else if (Number(row?.guardianLinks ?? 0) > 0) {
         this.deleteBlockReason.set(

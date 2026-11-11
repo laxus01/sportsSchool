@@ -24,94 +24,9 @@
       <div>
         <p class="section-kicker">FINANZAS</p>
         <h1>Pagos</h1>
-        <p>Consulta los abonos registrados y los saldos de mensualidades.</p>
+        <p>Consulta los pagos registrados y recibe nuevos abonos.</p>
       </div>
     </header>
-
-    @if (generationMessage()) {
-      <section class="generation-message app-card" aria-live="polite">
-        <p>{{ generationMessage() }}</p>
-      </section>
-    }
-
-    <section class="initial-charges app-card">
-      <div class="billing-period-controls">
-        <p class="section-kicker">GENERACIÓN DE OBLIGACIONES</p>
-        <h2>Mensualidades por periodo</h2>
-        @if (billingSettings()?.fecha_inicio_control_pagos) {
-          <p>
-            Control desde {{ billingSettings()?.fecha_inicio_control_pagos }}.
-            Los cambios de categoría o tarifa aplican desde el siguiente mes.
-          </p>
-        } @else {
-          <p role="alert">
-            Configura el inicio del control en
-            <a routerLink="/gestion/escuela">Datos de la escuela</a> antes de
-            generar cargos.
-          </p>
-        }
-        <ion-input
-          label="Periodo"
-          labelPlacement="stacked"
-          fill="outline"
-          type="month"
-          [value]="billingPeriod()"
-          (ionChange)="updateBillingPeriod($event)"
-        ></ion-input>
-        <p>
-          {{ chargeableCount() }} cargos listos para generar.
-          @if (missingTariffCount() > 0) {
-            {{ missingTariffCount() }} deportista(s) no tienen tarifa vigente.
-          }
-        </p>
-        @if (chargePreview().length > 0) {
-          <div class="charge-preview-list" aria-label="Vista previa de cargos">
-            @for (candidate of chargePreview(); track candidate.deportista_id) {
-              <div class="charge-preview-row">
-                <span>
-                  <strong>{{ candidate.nombre }}</strong>
-                  <small>{{ candidate.categoria || 'Sin categoría' }}</small>
-                </span>
-                <strong>{{ formatCandidateAmount(candidate) }}</strong>
-              </div>
-            }
-          </div>
-        }
-        @if (skippedChargePreview().length > 0) {
-          <p class="charge-warning">
-            Sin tarifa: {{ skippedAthleteNames() }}
-          </p>
-        }
-      </div>
-      <ion-button
-        color="primary"
-        fill="outline"
-        [disabled]="isGenerating() || !chargeableCount() || !billingSettings()?.fecha_inicio_control_pagos"
-        (click)="askToGeneratePeriodCharges()"
-      >
-        {{ isGenerating() ? 'Generando…' : 'Revisar y generar' }}
-      </ion-button>
-    </section>
-
-    @if (athleteBalances().length > 0) {
-      <details class="collapsible-section balances-section" open>
-        <summary class="collapsible-section-heading">
-          <span class="section-kicker">CARTERA PENDIENTE</span>
-          <ion-icon [icon]="icons.chevronDownOutline" aria-hidden="true"></ion-icon>
-        </summary>
-        <div class="balances-list">
-          @for (balance of athleteBalances(); track balance.deportista_id) {
-            <article class="balance-row app-card">
-              <div>
-                <strong>{{ balance.nombre }}</strong>
-                <span>{{ balance.categoria }}</span>
-              </div>
-              <strong>{{ formatAmount(balance.saldo_pendiente) }}</strong>
-            </article>
-          }
-        </div>
-      </details>
-    }
 
     <details class="collapsible-section payments-section" open>
       <summary class="collapsible-section-heading">
@@ -133,7 +48,7 @@
             <ion-icon [icon]="icons.cardOutline"></ion-icon>
           </span>
           <h2>Aún no hay pagos registrados</h2>
-          <p>Registra un pago para ver aquí su fecha, valor y mensualidades abonadas.</p>
+          <p>Registra un pago para ver aquí su fecha, valor y conceptos abonados.</p>
         </section>
       } @else {
         <div class="payments-list">
@@ -435,14 +350,6 @@
     </ion-content>
   </ng-template>
 </ion-modal>
-
-<ion-alert
-  [isOpen]="isGenerationAlertOpen()"
-  header="Confirmar generación"
-  [message]="'Se crearán ' + chargeableCount() + ' mensualidades para ' + billingPeriod() + '. ' + missingTariffCount() + ' deportista(s) se omitirán por falta de tarifa.'"
-  [buttons]="generationAlertButtons"
-  (didDismiss)="isGenerationAlertOpen.set(false)"
-></ion-alert>
 
 <ion-modal
   [isOpen]="isVoidModalOpen()"

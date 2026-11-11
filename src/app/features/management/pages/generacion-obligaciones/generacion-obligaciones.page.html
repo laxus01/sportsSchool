@@ -1,0 +1,107 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/home"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver al panel"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>Generación de obligaciones</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <main class="obligations-shell">
+    <header class="page-heading">
+      <p class="section-kicker">FINANZAS</p>
+      <h1>Generación de obligaciones</h1>
+      <p>Genera las mensualidades de los deportistas para un periodo.</p>
+    </header>
+
+    @if (generationMessage()) {
+      <section class="generation-message app-card" aria-live="polite">
+        <p>{{ generationMessage() }}</p>
+      </section>
+    }
+
+    @if (isLoading()) {
+      <section class="app-card list-state" aria-live="polite">
+        <p class="app-muted">Cargando configuración…</p>
+      </section>
+    } @else if (pageError()) {
+      <section class="app-card list-state" role="alert">
+        <h2>No se pudo cargar la generación de obligaciones</h2>
+        <p>{{ pageError() }}</p>
+      </section>
+    } @else {
+      <section class="obligation-generator app-card">
+        <div class="generator-content">
+          <p class="section-kicker">MENSUALIDADES</p>
+          <h2>Generar por periodo</h2>
+          @if (billingSettings()?.fecha_inicio_control_pagos) {
+            <p>
+              Control desde {{ billingSettings()?.fecha_inicio_control_pagos }}.
+              Los cambios de categoría o tarifa aplican desde el siguiente mes.
+            </p>
+          } @else {
+            <p role="alert">
+              Configura el inicio del control en
+              <a routerLink="/gestion/escuela">Datos de la escuela</a> antes de
+              generar cargos.
+            </p>
+          }
+          <ion-input
+            label="Periodo"
+            labelPlacement="stacked"
+            fill="outline"
+            type="month"
+            [value]="billingPeriod()"
+            (ionChange)="updateBillingPeriod($event)"
+          ></ion-input>
+          <p>
+            {{ chargeableCount() }} cargos listos para generar.
+            @if (missingTariffCount() > 0) {
+              {{ missingTariffCount() }} deportista(s) no tienen tarifa vigente.
+            }
+          </p>
+          @if (chargePreview().length > 0) {
+            <div class="charge-preview-list" aria-label="Vista previa de cargos">
+              @for (candidate of chargePreview(); track candidate.deportista_id) {
+                <div class="charge-preview-row">
+                  <span>
+                    <strong>{{ candidate.nombre }}</strong>
+                    <small>{{ candidate.categoria || 'Sin categoría' }}</small>
+                  </span>
+                  <strong>{{ formatCandidateAmount(candidate) }}</strong>
+                </div>
+              }
+            </div>
+          }
+          @if (skippedChargePreview().length > 0) {
+            <p class="charge-warning">
+              Sin tarifa: {{ skippedAthleteNames() }}
+            </p>
+          }
+        </div>
+        <ion-button
+          color="primary"
+          fill="outline"
+          [disabled]="isGenerating() || !chargeableCount() || !billingSettings()?.fecha_inicio_control_pagos"
+          (click)="askToGeneratePeriodCharges()"
+        >
+          {{ isGenerating() ? 'Generando…' : 'Revisar y generar' }}
+        </ion-button>
+      </section>
+    }
+  </main>
+</ion-content>
+
+<ion-alert
+  [isOpen]="isGenerationAlertOpen()"
+  header="Confirmar generación"
+  [message]="'Se crearán ' + chargeableCount() + ' mensualidades para ' + billingPeriod() + '. ' + missingTariffCount() + ' deportista(s) se omitirán por falta de tarifa.'"
+  [buttons]="generationAlertButtons"
+  (didDismiss)="isGenerationAlertOpen.set(false)"
+></ion-alert>

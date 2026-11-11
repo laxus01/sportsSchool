@@ -11,12 +11,10 @@ describe('PagosPage', () => {
   let fixture: ComponentFixture<PagosPage>;
   let connection: SQLiteDBConnection;
   let nextId: number;
-  let generated: boolean;
   let freshPendingRows: Array<Record<string, unknown>>;
 
   beforeEach(async () => {
     nextId = 0;
-    generated = false;
     freshPendingRows = [
       {
         id: 'monthly-1',
@@ -43,30 +41,12 @@ describe('PagosPage', () => {
       commitTransaction: vi.fn(async () => ({})),
       rollbackTransaction: vi.fn(async () => ({})),
       query: vi.fn(async (statement: string) => {
-        if (statement.includes('AS tarifa_id')) {
-          return {
-            values: generated
-              ? []
-              : [
-                  {
-                    deportista_id: 'athlete-1',
-                    tarifa_id: 'tariff-1',
-                    monto_pesos: 82000,
-                  },
-                ],
-          };
-        }
         if (statement.includes("'mensualidad' AS tipo")) {
           return { values: freshPendingRows };
         }
         return { values: [] };
       }),
-      run: vi.fn(async (statement: string) => {
-        if (statement.includes('INSERT INTO mensualidades')) {
-          generated = true;
-        }
-        return {};
-      }),
+      run: vi.fn(async () => ({})),
     } as unknown as SQLiteDBConnection;
 
     await TestBed.configureTestingModule({
@@ -97,6 +77,14 @@ describe('PagosPage', () => {
     );
   });
 
+  it('keeps obligation generation and additional charge assignment out of payments', () => {
+    const text = fixture.nativeElement.textContent;
+
+    expect(fixture.nativeElement.querySelector('.initial-charges')).toBeNull();
+    expect(text).not.toContain('GENERACIÓN DE OBLIGACIONES');
+    expect(text).not.toContain('CARGOS ADICIONALES');
+  });
+
   it('formats periods with a Spanish month name and year', () => {
     expect(fixture.componentInstance.formatPeriod('2026-11')).toBe(
       'Noviembre 2026',
@@ -125,31 +113,25 @@ describe('PagosPage', () => {
     ]);
   });
 
-  it('generates a selected period with the configured due day', async () => {
-    const page = fixture.componentInstance;
-    page.billingSettings.set({
-      fecha_inicio_control_pagos: '2026-10-15',
-      dia_vencimiento_mensual: 31,
-    });
-    page.billingPeriod.set('2026-11');
-    page.chargeableCount.set(1);
-
-    await page.generatePeriodCharges();
-
-    expect(connection.run).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO mensualidades'),
-      [
-        'payment-test-1',
-        'athlete-1',
-        'tariff-1',
-        '2026-11',
-        '2026-11-30',
-        82000,
-        null,
-      ],
-      false,
-    );
-    expect(connection.commitTransaction).toHaveBeenCalledOnce();
+  it('shows additional charge descriptions in payment concepts', () => {
+    expect(
+      fixture.componentInstance.paymentConceptRows({
+        id: 'payment-1',
+        fecha_pago: '2026-11-05',
+        monto_pesos: 15000,
+        medio_pago: 'efectivo',
+        entidad: null,
+        referencia: null,
+        observacion: null,
+        deportistas: 'Lucía Pérez',
+        periodos: null,
+        cargos: 'Arbitraje del torneo',
+        estado: 'registrado',
+        motivo_anulacion: null,
+      }),
+    ).toEqual([
+      { label: 'Cargo adicional', value: 'Arbitraje del torneo' },
+    ]);
   });
 
   it('applies a partial payment to the selected monthly charge', async () => {
@@ -204,6 +186,50 @@ describe('PagosPage', () => {
       2,
       expect.stringContaining('INSERT INTO pago_mensualidad'),
       ['payment-test-1', 'monthly-1', 30000],
+      false,
+    );
+    expect(connection.commitTransaction).toHaveBeenCalledOnce();
+  });
+
+  it('applies a partial payment to an additional charge', async () => {
+    const page = fixture.componentInstance;
+    const athlete = {
+      id: 'athlete-1',
+      nombres: 'Lucía',
+      apellidos: 'Pérez',
+      numero_documento: '123',
+      categoria: 'Infantil',
+    };
+    const obligation = {
+      id: 'charge-1',
+      tipo: 'cargo_adicional' as const,
+      periodo: '2026-11-03',
+      fecha_vencimiento: null,
+      descripcion: 'Arbitraje del torneo',
+      monto_pesos: 25000,
+      pagado_pesos: 0,
+      pendiente_pesos: 25000,
+      orden: '2026-11-03',
+    };
+    page.selectedAthlete.set(athlete);
+    page.pendingObligations.set([obligation]);
+    freshPendingRows = [obligation];
+    page.selectedObligationIds.set(['charge-1']);
+    page.paymentForm.setValue({
+      fechaPago: '2026-11-04',
+      monto: '10000',
+      medioPago: 'efectivo',
+      entidadId: '',
+      referencia: '',
+      observacion: '',
+    });
+
+    await page.savePayment();
+
+    expect(connection.run).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('INSERT INTO pago_cargo_adicional'),
+      ['payment-test-1', 'charge-1', 10000],
       false,
     );
     expect(connection.commitTransaction).toHaveBeenCalledOnce();

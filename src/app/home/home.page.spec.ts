@@ -44,10 +44,12 @@ describe('HomePage', () => {
     ) as NodeListOf<HTMLAnchorElement>;
     const destinations = Array.from(cards).map((card) => card.getAttribute('href'));
 
-    expect(cards.length).toBe(9);
+    expect(cards.length).toBe(11);
     expect(destinations).toContain('/gestion/deportistas');
     expect(destinations).toContain('/gestion/acudientes');
     expect(destinations).toContain('/gestion/pagos');
+    expect(destinations).toContain('/gestion/generacion-obligaciones');
+    expect(destinations).toContain('/gestion/cargos-adicionales');
     expect(destinations).toContain('/gestion/gastos');
     expect(destinations).toContain('/gestion/resumen-finanzas');
     expect(destinations).toContain('/gestion/respaldo');
@@ -65,7 +67,7 @@ describe('HomePage', () => {
     ).toBe(0);
     expect(
       fixture.nativeElement.querySelectorAll('a.module-card').length,
-    ).toBe(9);
+    ).toBe(11);
   });
 
   it('disables operational cards without a license or after grace expires', () => {
@@ -81,7 +83,7 @@ describe('HomePage', () => {
         'a.module-card',
       ) as NodeListOf<HTMLAnchorElement>;
 
-      expect(disabledCards.length).toBe(8);
+      expect(disabledCards.length).toBe(10);
       expect(enabledCards.length).toBe(1);
       expect(enabledCards[0].getAttribute('href')).toBe('/gestion/respaldo');
     }

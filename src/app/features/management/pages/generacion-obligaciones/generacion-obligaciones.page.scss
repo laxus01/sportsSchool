@@ -1,0 +1,132 @@
+.obligations-shell {
+  width: min(100% - 2rem, 76rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2.5rem) 0 3rem;
+}
+
+.page-heading {
+  margin-bottom: 1.3rem;
+}
+
+.page-heading h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.page-heading p:last-child {
+  margin: 0.45rem 0 0;
+  color: var(--app-muted);
+}
+
+.section-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.generation-message,
+.list-state {
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.generation-message p,
+.list-state p {
+  margin: 0;
+}
+
+.obligation-generator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+  padding: 1.1rem;
+}
+
+.generator-content {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.generator-content h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.05rem;
+}
+
+.generator-content p {
+  margin: 0;
+  color: var(--app-muted);
+  line-height: 1.5;
+}
+
+.generator-content ion-input {
+  max-width: 15rem;
+}
+
+.charge-preview-list {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 12rem;
+  overflow: auto;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-control);
+  padding: 0.55rem;
+}
+
+.charge-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--app-text);
+  font-size: 0.82rem;
+}
+
+.charge-preview-row span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.charge-preview-row small,
+.charge-warning {
+  color: var(--app-muted);
+  font-size: 0.78rem;
+}
+
+.list-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.65rem;
+  text-align: center;
+}
+
+.list-state h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.15rem;
+}
+
+@media (max-width: 700px) {
+  .obligations-shell {
+    width: min(100% - 1.5rem, 76rem);
+  }
+
+  .obligation-generator {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .obligation-generator > ion-button {
+    width: 100%;
+    margin: 0;
+  }
+}

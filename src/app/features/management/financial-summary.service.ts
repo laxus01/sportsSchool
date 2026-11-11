@@ -11,9 +11,10 @@ export interface AthleteBalance {
 
 export interface AthleteFinancialObligation {
   id: string;
-  tipo: 'mensualidad' | 'inscripcion';
+  tipo: 'mensualidad' | 'inscripcion' | 'cargo_adicional';
   periodo: string | null;
   fecha_vencimiento: string | null;
+  descripcion: string | null;
   monto_pesos: number;
   pagado_pesos: number;
   pendiente_pesos: number;
@@ -41,6 +42,7 @@ export class FinancialSummaryService {
          tipo,
          periodo,
          fecha_vencimiento,
+         descripcion,
          monto_pesos,
          pagado_pesos,
          monto_pesos - pagado_pesos AS pendiente_pesos,
@@ -51,6 +53,7 @@ export class FinancialSummaryService {
            'mensualidad' AS tipo,
            m.periodo,
            m.fecha_vencimiento,
+           NULL AS descripcion,
            m.monto_pesos,
            COALESCE((
              SELECT SUM(pm.monto_aplicado_pesos)
@@ -67,6 +70,7 @@ export class FinancialSummaryService {
            'inscripcion' AS tipo,
            NULL AS periodo,
            i.fecha_inscripcion AS fecha_vencimiento,
+           NULL AS descripcion,
            i.monto_pesos,
            COALESCE((
              SELECT SUM(pi.monto_aplicado_pesos)
@@ -77,10 +81,27 @@ export class FinancialSummaryService {
            ), 0) AS pagado_pesos
          FROM inscripciones i
          WHERE i.deportista_id = ? AND i.estado = 'activa'
+         UNION ALL
+         SELECT
+           c.id,
+           'cargo_adicional' AS tipo,
+           c.fecha_cargo AS periodo,
+           NULL AS fecha_vencimiento,
+           c.descripcion,
+           c.monto_pesos,
+           COALESCE((
+             SELECT SUM(pc.monto_aplicado_pesos)
+             FROM pago_cargo_adicional pc
+             JOIN pagos p ON p.id = pc.pago_id
+             WHERE pc.cargo_adicional_id = c.id
+               AND p.estado = 'registrado'
+           ), 0) AS pagado_pesos
+         FROM cargos_adicionales c
+         WHERE c.deportista_id = ?
        )
        WHERE monto_pesos > pagado_pesos
        ORDER BY orden, tipo`,
-      [athleteId, athleteId],
+      [athleteId, athleteId, athleteId],
     );
 
     return (result.values ?? []).map((row) => {
@@ -138,6 +159,17 @@ export class FinancialSummaryService {
                ), 0), 0))
                FROM inscripciones i
                WHERE i.deportista_id = d.id AND i.estado = 'activa'
+             ), 0)
+             + COALESCE((
+               SELECT SUM(MAX(c.monto_pesos - COALESCE((
+                 SELECT SUM(pc.monto_aplicado_pesos)
+                 FROM pago_cargo_adicional pc
+                 JOIN pagos p ON p.id = pc.pago_id
+                 WHERE pc.cargo_adicional_id = c.id
+                   AND p.estado = 'registrado'
+               ), 0), 0))
+               FROM cargos_adicionales c
+               WHERE c.deportista_id = d.id
              ), 0) AS saldo_pendiente
            FROM deportistas d
            LEFT JOIN deportista_categoria_historial h

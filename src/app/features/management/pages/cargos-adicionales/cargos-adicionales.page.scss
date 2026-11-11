@@ -1,0 +1,74 @@
+.additional-charges-shell {
+  width: min(100% - 2rem, 76rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2.5rem) 0 3rem;
+}
+
+.page-heading {
+  margin-bottom: 1.3rem;
+}
+
+.page-heading h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.page-heading p:last-child,
+.charge-entry p:last-child {
+  margin: 0.45rem 0 0;
+  color: var(--app-muted);
+  line-height: 1.5;
+}
+
+.section-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.charge-message {
+  margin-bottom: 1rem;
+  padding: 0.8rem 1rem;
+  color: var(--app-text);
+}
+
+.charge-message p {
+  margin: 0;
+}
+
+.charge-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+  padding: 1.1rem;
+}
+
+.charge-entry h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 1.05rem;
+}
+
+@media (max-width: 700px) {
+  .additional-charges-shell {
+    width: min(100% - 1.5rem, 76rem);
+  }
+
+  .charge-entry {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .charge-entry > ion-button {
+    width: 100%;
+    margin: 0;
+  }
+
+}

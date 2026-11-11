@@ -40,6 +40,10 @@ import {
   EXPENSE_AMOUNT_MIGRATION_STATEMENTS,
   EXPENSE_AMOUNT_MIGRATION_VERSION,
 } from './migrations/008-expense-amount';
+import {
+  ADDITIONAL_CHARGES_MIGRATION_STATEMENTS,
+  ADDITIONAL_CHARGES_MIGRATION_VERSION,
+} from './migrations/009-additional-charges';
 
 const DATABASE_NAME = 'sports_school';
 interface DatabaseMigration {
@@ -79,6 +83,10 @@ const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
   {
     version: EXPENSE_AMOUNT_MIGRATION_VERSION,
     statements: EXPENSE_AMOUNT_MIGRATION_STATEMENTS,
+  },
+  {
+    version: ADDITIONAL_CHARGES_MIGRATION_VERSION,
+    statements: ADDITIONAL_CHARGES_MIGRATION_STATEMENTS,
   },
 ];
 const CURRENT_DATABASE_VERSION =

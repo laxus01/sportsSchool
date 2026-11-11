@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import {
   addOutline,
   cardOutline,
@@ -10,10 +9,6 @@ import {
 } from 'ionicons/icons';
 import { DatabaseService } from '../../../../database/database.service';
 import { AuthService } from '../../../auth/services/auth.service';
-import {
-  FinancialSummaryService,
-  type AthleteBalance,
-} from '../../financial-summary.service';
 
 interface AthleteRecord {
   id: string;
@@ -23,13 +18,14 @@ interface AthleteRecord {
   categoria: string;
 }
 
-type ObligationType = 'mensualidad' | 'inscripcion';
+type ObligationType = 'mensualidad' | 'inscripcion' | 'cargo_adicional';
 
 interface PendingObligation {
   id: string;
   tipo: ObligationType;
   periodo: string | null;
   fecha_vencimiento: string | null;
+  descripcion?: string | null;
   monto_pesos: number;
   pagado_pesos: number;
   pendiente_pesos: number;
@@ -51,6 +47,7 @@ interface PaymentRecord {
   observacion: string | null;
   deportistas: string | null;
   periodos: string | null;
+  cargos?: string | null;
   estado: 'registrado' | 'anulado';
   motivo_anulacion: string | null;
 }
@@ -58,19 +55,6 @@ interface PaymentRecord {
 interface PaymentConceptRow {
   label: string;
   value: string;
-}
-
-interface ChargeCandidate {
-  deportista_id: string;
-  nombre: string;
-  categoria: string | null;
-  tarifa_id: string | null;
-  monto_pesos: number | null;
-}
-
-interface BillingSettings {
-  fecha_inicio_control_pagos: string | null;
-  dia_vencimiento_mensual: number;
 }
 
 const spanishMonths = [
@@ -102,9 +86,7 @@ const localDateString = (date = new Date()): string => {
 })
 export class PagosPage {
   private readonly database = inject(DatabaseService);
-  private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
-  private readonly financialSummary = inject(FinancialSummaryService);
 
   readonly icons = {
     addOutline,
@@ -119,26 +101,16 @@ export class PagosPage {
   readonly pendingObligations = signal<PendingObligation[]>([]);
   readonly selectedAthlete = signal<AthleteRecord | null>(null);
   readonly selectedObligationIds = signal<string[]>([]);
-  readonly billingSettings = signal<BillingSettings | null>(null);
-  readonly billingPeriod = signal(this.currentPeriod());
-  readonly athleteBalances = signal<AthleteBalance[]>([]);
-  readonly chargePreview = signal<ChargeCandidate[]>([]);
-  readonly skippedChargePreview = signal<ChargeCandidate[]>([]);
   readonly athleteSearch = signal('');
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
-  readonly isGenerating = signal(false);
   readonly isPaymentModalOpen = signal(false);
-  readonly isGenerationAlertOpen = signal(false);
   readonly isVoidModalOpen = signal(false);
   readonly selectedPaymentToVoid = signal<PaymentRecord | null>(null);
   readonly isEditModalOpen = signal(false);
   readonly editingPayment = signal<PaymentRecord | null>(null);
-  readonly chargeableCount = signal(0);
-  readonly missingTariffCount = signal(0);
   readonly pageError = signal('');
   readonly modalError = signal('');
-  readonly generationMessage = signal('');
   readonly editPaymentForm = new FormGroup({
     referencia: new FormControl('', {
       nonNullable: true,
@@ -153,17 +125,6 @@ export class PagosPage {
     nonNullable: true,
     validators: [Validators.required, Validators.maxLength(240)],
   });
-  readonly generationAlertButtons = [
-    { text: 'Cancelar', role: 'cancel' },
-    {
-      text: 'Generar',
-      role: 'confirm',
-      handler: () => {
-        void this.generatePeriodCharges();
-      },
-    },
-  ];
-
   readonly filteredAthletes = computed(() => {
     const query = this.normalize(this.athleteSearch());
     if (!query) {
@@ -375,6 +336,12 @@ export class PagosPage {
         value: 'Incluida',
       });
     }
+    if (payment.cargos) {
+      rows.push({
+        label: 'Cargo adicional',
+        value: payment.cargos,
+      });
+    }
 
     return rows.length
       ? rows
@@ -382,140 +349,19 @@ export class PagosPage {
   }
 
   obligationLabel(obligation: PendingObligation): string {
-    return obligation.tipo === 'inscripcion'
-      ? 'Inscripción'
-      : `Mensualidad ${this.formatPeriod(obligation.periodo ?? '')}`;
-  }
-
-  skippedAthleteNames(): string {
-    return this.skippedChargePreview()
-      .map((candidate) => candidate.nombre)
-      .join(', ');
-  }
-
-  formatCandidateAmount(candidate: ChargeCandidate): string {
-    return candidate.monto_pesos === null
-      ? 'Sin tarifa'
-      : this.formatAmount(Number(candidate.monto_pesos));
+    if (obligation.tipo === 'inscripcion') {
+      return 'Inscripción';
+    }
+    if (obligation.tipo === 'cargo_adicional') {
+      return obligation.descripcion ?? 'Cargo adicional';
+    }
+    return `Mensualidad ${this.formatPeriod(obligation.periodo ?? '')}`;
   }
 
   paymentMethodLabel(payment: PaymentRecord): string {
     return payment.medio_pago === 'efectivo'
       ? 'Efectivo'
       : payment.entidad ?? 'Transferencia';
-  }
-
-  askToGeneratePeriodCharges(): void {
-    const startDate = this.billingSettings()?.fecha_inicio_control_pagos;
-    if (!startDate) {
-      this.generationMessage.set(
-        'Configura primero la fecha de inicio del control en Datos de la escuela.',
-      );
-      return;
-    }
-    if (this.billingPeriod() < startDate.slice(0, 7)) {
-      this.generationMessage.set(
-        'No se pueden generar cargos anteriores al inicio del control.',
-      );
-      return;
-    }
-    if (this.billingPeriod() > this.currentPeriod()) {
-      this.generationMessage.set(
-        'No se pueden generar mensualidades de periodos futuros.',
-      );
-      return;
-    }
-    this.isGenerationAlertOpen.set(true);
-  }
-
-  async generatePeriodCharges(): Promise<void> {
-    if (this.isGenerating() || this.chargeableCount() === 0) {
-      return;
-    }
-    const settings = this.billingSettings();
-    const period = this.billingPeriod();
-    if (
-      !settings?.fecha_inicio_control_pagos ||
-      !/^\d{4}-(0[1-9]|1[0-2])$/.test(period) ||
-      period < settings.fecha_inicio_control_pagos.slice(0, 7) ||
-      period > this.currentPeriod()
-    ) {
-      this.generationMessage.set(
-        'El periodo no es válido o está fuera del control de cobros.',
-      );
-      return;
-    }
-    this.isGenerationAlertOpen.set(false);
-    this.isGenerating.set(true);
-    this.generationMessage.set('');
-
-    try {
-      const database = await this.database.getConnection();
-      await database.beginTransaction();
-      try {
-        const candidates = await this.queryChargeCandidates(
-          database,
-          period,
-        );
-        const chargeable = candidates.filter(
-          (candidate) =>
-            candidate.tarifa_id !== null && candidate.monto_pesos !== null,
-        );
-        if (!chargeable.length) {
-          await database.commitTransaction();
-          this.generationMessage.set(
-            'No hay deportistas elegibles con una tarifa vigente para este periodo.',
-          );
-          return;
-        }
-
-        for (const candidate of chargeable) {
-          const monthlyId = crypto.randomUUID();
-          await database.run(
-            `INSERT INTO mensualidades
-              (id, deportista_id, tarifa_id, periodo, fecha_vencimiento,
-               monto_pesos, creado_por)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
-              monthlyId,
-              candidate.deportista_id,
-              candidate.tarifa_id,
-              period,
-              this.dueDateForPeriod(
-                period,
-                settings.dia_vencimiento_mensual,
-              ),
-              Number(candidate.monto_pesos),
-              this.auth.currentUsername,
-            ],
-            false,
-          );
-          await this.writeFinancialAudit(
-            database,
-            'OBLIGACION_GENERADA',
-            'mensualidad',
-            monthlyId,
-            `Generación del periodo ${period}`,
-          );
-        }
-        await database.commitTransaction();
-
-        this.generationMessage.set(
-          `Se generaron ${chargeable.length} mensualidades de ${period}. ${
-            candidates.length - chargeable.length
-          } deportistas no tenían tarifa vigente.`,
-        );
-      } catch (error) {
-        await database.rollbackTransaction();
-        throw error;
-      }
-
-      await this.loadPage();
-    } catch {
-      this.generationMessage.set('No se pudieron generar las mensualidades.');
-    } finally {
-      this.isGenerating.set(false);
-    }
   }
 
   async savePayment(): Promise<void> {
@@ -610,10 +456,18 @@ export class PagosPage {
               [paymentId, obligation.id, appliedAmount],
               false,
             );
-          } else {
+          } else if (obligation.tipo === 'inscripcion') {
             await database.run(
               `INSERT INTO pago_inscripcion
                 (pago_id, inscripcion_id, monto_aplicado_pesos)
+               VALUES (?, ?, ?)`,
+              [paymentId, obligation.id, appliedAmount],
+              false,
+            );
+          } else {
+            await database.run(
+              `INSERT INTO pago_cargo_adicional
+                (pago_id, cargo_adicional_id, monto_aplicado_pesos)
                VALUES (?, ?, ?)`,
               [paymentId, obligation.id, appliedAmount],
               false,
@@ -653,165 +507,73 @@ export class PagosPage {
     }
   }
 
-  cancel(): Promise<boolean> {
-    return this.router.navigateByUrl('/home');
-  }
-
   private async loadPage(): Promise<void> {
     this.isLoading.set(true);
     this.pageError.set('');
     try {
       const database = await this.database.getConnection();
-      const [
-        settingsResult,
-        paymentsResult,
-        summary,
-      ] = await Promise.all([
-          database.query(
-            `SELECT fecha_inicio_control_pagos, dia_vencimiento_mensual
-             FROM escuela WHERE id = 1 LIMIT 1`,
-          ),
-        database.query(
-          `SELECT
-             p.id,
-             p.fecha_pago,
-             p.monto_pesos,
-             p.medio_pago,
-             p.referencia,
-             p.observacion,
-             p.estado,
-             p.motivo_anulacion,
-             et.nombre AS entidad,
-             applied.deportistas,
-             applied.periodos
-           FROM pagos p
-           LEFT JOIN entidades_transferencia et
-             ON et.id = p.entidad_transferencia_id
-           LEFT JOIN (
+      const result = await database.query(
+        `SELECT
+           p.id,
+           p.fecha_pago,
+           p.monto_pesos,
+           p.medio_pago,
+           p.referencia,
+           p.observacion,
+           p.estado,
+           p.motivo_anulacion,
+           et.nombre AS entidad,
+           applied.deportistas,
+           applied.periodos,
+           applied.cargos
+         FROM pagos p
+         LEFT JOIN entidades_transferencia et
+           ON et.id = p.entidad_transferencia_id
+         LEFT JOIN (
+           SELECT
+             pago_id,
+             GROUP_CONCAT(DISTINCT nombre) AS deportistas,
+             GROUP_CONCAT(DISTINCT concepto) AS periodos,
+             GROUP_CONCAT(DISTINCT cargo) AS cargos
+           FROM (
              SELECT
-               pago_id,
-               GROUP_CONCAT(DISTINCT nombre) AS deportistas,
-               GROUP_CONCAT(DISTINCT concepto) AS periodos
-             FROM (
-               SELECT
-                 pm.pago_id,
-                 d.nombres || ' ' || d.apellidos AS nombre,
-                 m.periodo AS concepto
-               FROM pago_mensualidad pm
-               JOIN mensualidades m ON m.id = pm.mensualidad_id
-               JOIN deportistas d ON d.id = m.deportista_id
-               UNION ALL
-               SELECT
-                 pi.pago_id,
-                 d.nombres || ' ' || d.apellidos AS nombre,
-                 'Inscripción' AS concepto
-               FROM pago_inscripcion pi
-               JOIN inscripciones i ON i.id = pi.inscripcion_id
-               JOIN deportistas d ON d.id = i.deportista_id
-             )
-             GROUP BY pago_id
-           ) applied ON applied.pago_id = p.id
-           ORDER BY p.fecha_pago DESC, p.creado_en DESC`,
-        ),
-        this.financialSummary.loadSummary(database, this.today),
-      ]);
-      this.billingSettings.set(
-        (settingsResult.values?.[0] as BillingSettings | undefined) ?? null,
+               pm.pago_id,
+               d.nombres || ' ' || d.apellidos AS nombre,
+               m.periodo AS concepto,
+               NULL AS cargo
+             FROM pago_mensualidad pm
+             JOIN mensualidades m ON m.id = pm.mensualidad_id
+             JOIN deportistas d ON d.id = m.deportista_id
+             UNION ALL
+             SELECT
+               pi.pago_id,
+               d.nombres || ' ' || d.apellidos AS nombre,
+               'Inscripción' AS concepto,
+               NULL AS cargo
+             FROM pago_inscripcion pi
+             JOIN inscripciones i ON i.id = pi.inscripcion_id
+             JOIN deportistas d ON d.id = i.deportista_id
+             UNION ALL
+             SELECT
+               pc.pago_id,
+               d.nombres || ' ' || d.apellidos AS nombre,
+               NULL AS concepto,
+               ca.descripcion AS cargo
+             FROM pago_cargo_adicional pc
+             JOIN cargos_adicionales ca
+               ON ca.id = pc.cargo_adicional_id
+             JOIN deportistas d ON d.id = ca.deportista_id
+           )
+           GROUP BY pago_id
+         ) applied ON applied.pago_id = p.id
+         ORDER BY p.fecha_pago DESC, p.creado_en DESC`,
       );
-      this.payments.set((paymentsResult.values ?? []) as PaymentRecord[]);
-      this.athleteBalances.set(summary.athleteBalances);
-      await this.refreshChargePreview(database);
+      this.payments.set((result.values ?? []) as PaymentRecord[]);
     } catch {
       this.pageError.set('No se pudieron cargar los pagos.');
     } finally {
       this.isLoading.set(false);
     }
-  }
-
-  private async refreshChargePreview(
-    database: Awaited<ReturnType<DatabaseService['getConnection']>>,
-  ): Promise<void> {
-    this.chargeableCount.set(0);
-    this.missingTariffCount.set(0);
-    this.chargePreview.set([]);
-    this.skippedChargePreview.set([]);
-    const startDate = this.billingSettings()?.fecha_inicio_control_pagos;
-    const period = this.billingPeriod();
-    if (
-      !startDate ||
-      !/^\d{4}-(0[1-9]|1[0-2])$/.test(period) ||
-      period < startDate.slice(0, 7) ||
-      period > this.currentPeriod()
-    ) {
-      return;
-    }
-
-    const candidates = await this.queryChargeCandidates(database, period);
-    const chargeable = candidates.filter(
-      (candidate) =>
-        candidate.tarifa_id !== null && candidate.monto_pesos !== null,
-    );
-    const skipped = candidates.filter(
-      (candidate) =>
-        candidate.tarifa_id === null || candidate.monto_pesos === null,
-    );
-    this.chargePreview.set(chargeable);
-    this.skippedChargePreview.set(skipped);
-    this.chargeableCount.set(chargeable.length);
-    this.missingTariffCount.set(skipped.length);
-  }
-
-  private async queryChargeCandidates(
-    database: Awaited<ReturnType<DatabaseService['getConnection']>>,
-    period: string,
-  ): Promise<ChargeCandidate[]> {
-    const periodStart = `${period}-01`;
-    const periodEnd = this.lastDateOfPeriod(period);
-    const result = await database.query(
-       `SELECT
-         d.id AS deportista_id,
-         d.nombres || ' ' || d.apellidos AS nombre,
-         c.nombre AS categoria,
-         t.id AS tarifa_id,
-         t.monto_pesos
-       FROM deportistas d
-       LEFT JOIN deportista_categoria_historial h
-         ON h.deportista_id = d.id
-        AND h.vigente_desde <= ?
-        AND (h.vigente_hasta IS NULL OR h.vigente_hasta >= ?)
-        LEFT JOIN tarifas_categoria t
-         ON t.id = (
-           SELECT current_tariff.id
-           FROM tarifas_categoria current_tariff
-           WHERE current_tariff.categoria_id =
-             COALESCE(h.categoria_id, d.categoria_id)
-             AND current_tariff.vigente_desde <= ?
-             AND (current_tariff.vigente_hasta IS NULL
-               OR current_tariff.vigente_hasta >= ?)
-           ORDER BY current_tariff.vigente_desde DESC
-           LIMIT 1
-         )
-       LEFT JOIN categorias c
-         ON c.id = COALESCE(h.categoria_id, d.categoria_id)
-       WHERE (d.estado = 'activo' OR d.fecha_retiro IS NOT NULL)
-         AND (d.fecha_retiro IS NULL OR d.fecha_retiro > ?)
-         AND d.fecha_ingreso <= ?
-         AND NOT EXISTS (
-           SELECT 1 FROM mensualidades m
-           WHERE m.deportista_id = d.id AND m.periodo = ?
-         )
-       ORDER BY d.id`,
-      [
-        periodStart,
-        periodStart,
-        periodStart,
-        periodStart,
-        periodStart,
-        periodEnd,
-        period,
-      ],
-    );
-    return (result.values ?? []) as ChargeCandidate[];
   }
 
   private async queryPendingObligations(
@@ -824,6 +586,7 @@ export class PagosPage {
          tipo,
          periodo,
          fecha_vencimiento,
+         descripcion,
          monto_pesos,
          pagado_pesos,
          monto_pesos - pagado_pesos AS pendiente_pesos,
@@ -834,6 +597,7 @@ export class PagosPage {
            'mensualidad' AS tipo,
            m.periodo,
            m.fecha_vencimiento,
+           NULL AS descripcion,
            m.monto_pesos,
            COALESCE((
              SELECT SUM(pm.monto_aplicado_pesos)
@@ -850,6 +614,7 @@ export class PagosPage {
            'inscripcion' AS tipo,
            NULL AS periodo,
            i.fecha_inscripcion AS fecha_vencimiento,
+           NULL AS descripcion,
            i.monto_pesos,
            COALESCE((
              SELECT SUM(pi.monto_aplicado_pesos)
@@ -860,10 +625,27 @@ export class PagosPage {
            ), 0) AS pagado_pesos
          FROM inscripciones i
          WHERE i.deportista_id = ? AND i.estado = 'activa'
+         UNION ALL
+         SELECT
+           c.id,
+           'cargo_adicional' AS tipo,
+           c.fecha_cargo AS periodo,
+           NULL AS fecha_vencimiento,
+           c.descripcion,
+           c.monto_pesos,
+           COALESCE((
+             SELECT SUM(pc.monto_aplicado_pesos)
+             FROM pago_cargo_adicional pc
+             JOIN pagos p ON p.id = pc.pago_id
+             WHERE pc.cargo_adicional_id = c.id
+               AND p.estado = 'registrado'
+           ), 0) AS pagado_pesos
+         FROM cargos_adicionales c
+         WHERE c.deportista_id = ?
        )
        WHERE monto_pesos > pagado_pesos
        ORDER BY orden, tipo`,
-      [athleteId, athleteId],
+      [athleteId, athleteId, athleteId],
     );
     return (result.values ?? []).map((row) => {
       const obligation = row as PendingObligation;
@@ -1057,39 +839,6 @@ export class PagosPage {
     this.isVoidModalOpen.set(false);
     this.selectedPaymentToVoid.set(null);
     this.cancelReason.reset('');
-  }
-
-  updateBillingPeriod(event: CustomEvent<{ value?: string | null }>): void {
-    this.billingPeriod.set(event.detail.value ?? this.currentPeriod());
-    void this.loadChargePreview();
-  }
-
-  private async loadChargePreview(): Promise<void> {
-    try {
-      const database = await this.database.getConnection();
-      await this.refreshChargePreview(database);
-    } catch {
-      this.chargeableCount.set(0);
-      this.missingTariffCount.set(0);
-      this.chargePreview.set([]);
-      this.skippedChargePreview.set([]);
-    }
-  }
-
-  private currentPeriod(): string {
-    return localDateString().slice(0, 7);
-  }
-
-  private lastDateOfPeriod(period: string): string {
-    const [year, month] = period.split('-').map(Number);
-    const day = new Date(year, month, 0).getDate();
-    return `${period}-${String(day).padStart(2, '0')}`;
-  }
-
-  private dueDateForPeriod(period: string, dueDay: number): string {
-    const [year, month] = period.split('-').map(Number);
-    const lastDay = new Date(year, month, 0).getDate();
-    return `${period}-${String(Math.min(dueDay, lastDay)).padStart(2, '0')}`;
   }
 
   private resetPaymentForm(): void {

@@ -1,0 +1,207 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/home"
+        text=""
+        icon="chevron-back-outline"
+        aria-label="Volver al panel"
+      ></ion-back-button>
+    </ion-buttons>
+    <ion-title>Cargos adicionales</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="app-page">
+  <main class="additional-charges-shell">
+    <header class="page-heading">
+      <p class="section-kicker">FINANZAS</p>
+      <h1>Cargos adicionales</h1>
+      <p>
+        Registra actividades o gastos de la escuela a cargo de deportistas.
+      </p>
+    </header>
+
+    @if (additionalChargeMessage()) {
+      <section class="charge-message app-card" aria-live="polite">
+        <p>{{ additionalChargeMessage() }}</p>
+      </section>
+    }
+
+    <section class="charge-entry app-card">
+      <div>
+        <p class="section-kicker">ASIGNACIÓN POR CATEGORÍA</p>
+        <h2>Crear cargos para varios deportistas</h2>
+        <p>
+          Selecciona una categoría y los deportistas. Cada uno recibirá el valor
+          completo indicado.
+        </p>
+      </div>
+      <ion-button
+        color="primary"
+        fill="outline"
+        (click)="openModal()"
+      >
+        <ion-icon slot="start" [icon]="icons.addOutline"></ion-icon>
+        Nuevo cargo
+      </ion-button>
+    </section>
+  </main>
+</ion-content>
+
+<ion-modal
+  [isOpen]="isModalOpen()"
+  (didDismiss)="closeModal()"
+  [backdropDismiss]="!isCreatingCharge()"
+>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeModal()"
+            [disabled]="isCreatingCharge()"
+            aria-label="Cerrar asignación de cargo"
+          >
+            <ion-icon slot="icon-only" [icon]="icons.chevronBackOutline"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+        <ion-title>Asignar cargo adicional</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="app-page">
+      <main class="payment-modal-shell">
+        <form
+          class="payment-form app-card"
+          [formGroup]="additionalChargeForm"
+          (ngSubmit)="saveAdditionalCharge()"
+        >
+          <section class="modal-section">
+            <div class="modal-section-heading">
+              <p class="section-kicker">1 · CATEGORÍA</p>
+              <h2>Filtra los deportistas</h2>
+            </div>
+            <ion-select
+              label="Categoría"
+              labelPlacement="stacked"
+              fill="outline"
+              interface="action-sheet"
+              [value]="chargeCategoryId()"
+              (ionChange)="selectChargeCategory($event.detail.value)"
+            >
+              <ion-select-option value="">Selecciona una categoría</ion-select-option>
+              @for (category of chargeCategories(); track category.id) {
+                <ion-select-option [value]="category.id">
+                  {{ category.nombre }}
+                </ion-select-option>
+              }
+            </ion-select>
+            @if (isLoadingCategories()) {
+              <p class="inline-note">Cargando categorías…</p>
+            } @else if (chargeCategories().length === 0) {
+              <p class="inline-note">No hay categorías activas para seleccionar.</p>
+            }
+          </section>
+
+          @if (chargeCategoryId()) {
+            <section class="modal-section">
+              <div class="modal-section-heading">
+                <p class="section-kicker">2 · DEPORTISTAS</p>
+                <h2>Selecciona quiénes tendrán el cargo</h2>
+              </div>
+              @if (chargeAthletes().length > 0) {
+                <ion-searchbar
+                  class="athlete-search"
+                  placeholder="Buscar por nombre o documento"
+                  aria-label="Buscar deportistas para asignar cargo"
+                  [value]="chargeAthleteSearch()"
+                  (ionInput)="updateChargeAthleteSearch($event)"
+                  debounce="150"
+                ></ion-searchbar>
+                @if (filteredChargeAthletes().length > 0) {
+                  <ion-button
+                    type="button"
+                    fill="clear"
+                    size="small"
+                    (click)="toggleAllVisibleChargeAthletes()"
+                  >
+                    {{ allVisibleChargeAthletesSelected() ? 'Quitar selección visible' : 'Seleccionar visibles' }}
+                  </ion-button>
+                  <ion-list class="athlete-results">
+                    @for (athlete of filteredChargeAthletes(); track athlete.id) {
+                      <ion-item>
+                        <ion-checkbox
+                          slot="start"
+                          [checked]="selectedChargeAthleteIds().includes(athlete.id)"
+                          (ionChange)="toggleChargeAthlete(athlete.id, $event.detail.checked)"
+                          [attr.aria-label]="'Asignar cargo a ' + athlete.nombres + ' ' + athlete.apellidos"
+                        ></ion-checkbox>
+                        <ion-label>
+                          <h3>{{ athlete.nombres }} {{ athlete.apellidos }}</h3>
+                          <p>{{ athlete.categoria }} · {{ athlete.numero_documento || 'Sin documento' }}</p>
+                        </ion-label>
+                      </ion-item>
+                    }
+                  </ion-list>
+                  <p class="inline-note">
+                    {{ selectedChargeAthleteIds().length }} deportista(s)
+                    seleccionado(s). El valor completo se asignará a cada uno.
+                  </p>
+                } @else {
+                  <p class="inline-note">No encontramos deportistas con esa búsqueda.</p>
+                }
+              } @else {
+                <p class="inline-note">Esta categoría no tiene deportistas activos.</p>
+              }
+            </section>
+          }
+
+          <section class="modal-section">
+            <div class="modal-section-heading">
+              <p class="section-kicker">3 · CARGO</p>
+              <h2>Describe el concepto y su valor</h2>
+            </div>
+            <ion-textarea
+              label="Descripción"
+              labelPlacement="stacked"
+              fill="outline"
+              formControlName="descripcion"
+              maxlength="240"
+              autoGrow="true"
+            ></ion-textarea>
+            <app-money-input
+              label="Valor por deportista (COP)"
+              formControlName="monto"
+              helperText="Este valor se asignará completo a cada deportista seleccionado."
+              errorText="Ingresa un valor entero mayor que cero"
+              [invalid]="additionalChargeForm.controls.monto.invalid && additionalChargeForm.controls.monto.touched"
+            ></app-money-input>
+          </section>
+
+          @if (additionalChargeError()) {
+            <p class="form-error" role="alert">{{ additionalChargeError() }}</p>
+          }
+          <div class="modal-actions">
+            <ion-button
+              type="button"
+              fill="clear"
+              (click)="closeModal()"
+              [disabled]="isCreatingCharge()"
+            >
+              Cancelar
+            </ion-button>
+            <ion-button
+              type="submit"
+              color="primary"
+              [disabled]="isCreatingCharge() || additionalChargeForm.invalid || !chargeCategoryId() || !selectedChargeAthleteIds().length"
+            >
+              {{ isCreatingCharge() ? 'Asignando…' : 'Asignar a ' + selectedChargeAthleteIds().length + ' deportista(s)' }}
+            </ion-button>
+          </div>
+        </form>
+      </main>
+    </ion-content>
+  </ng-template>
+</ion-modal>
