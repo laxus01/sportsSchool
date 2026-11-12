@@ -6,6 +6,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseService } from '../../../database/database.service';
 import { AuthService } from './auth.service';
 
+vi.mock('@capacitor/preferences', () => ({
+  Preferences: {
+    get: vi.fn(),
+    set: vi.fn(),
+    remove: vi.fn(),
+  },
+}));
+
 interface StoredCredential {
   id: string;
   nombre_usuario: string;
@@ -22,15 +30,21 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     preferences = new Map();
-    vi.spyOn(Preferences, 'get').mockImplementation(async ({ key }) => ({
-      value: preferences.get(key) ?? null,
-    }));
-    vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
-      preferences.set(key, value);
-    });
-    vi.spyOn(Preferences, 'remove').mockImplementation(async ({ key }) => {
-      preferences.delete(key);
-    });
+    vi.mocked(Preferences.get)
+      .mockReset()
+      .mockImplementation(async ({ key }) => ({
+        value: preferences.get(key) ?? null,
+      }));
+    vi.mocked(Preferences.set)
+      .mockReset()
+      .mockImplementation(async ({ key, value }) => {
+        preferences.set(key, value);
+      });
+    vi.mocked(Preferences.remove)
+      .mockReset()
+      .mockImplementation(async ({ key }) => {
+        preferences.delete(key);
+      });
     vi.stubGlobal(
       'crypto',
       {
@@ -104,7 +118,6 @@ describe('AuthService', () => {
   afterEach(() => {
     TestBed.resetTestingModule();
     vi.unstubAllGlobals();
-    vi.restoreAllMocks();
   });
 
   it('stores a password verifier and authenticates with the matching password', async () => {

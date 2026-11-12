@@ -241,7 +241,7 @@ export class RespaldoPage implements OnInit {
       this.restoreSuccess.set(
         'La base de datos fue restaurada. Inicia sesión de nuevo.',
       );
-      this.auth.logout();
+      await this.auth.logout();
       await this.router.navigateByUrl('/auth/login', {
         replaceUrl: true,
       });
