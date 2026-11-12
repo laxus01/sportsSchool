@@ -9,13 +9,16 @@ import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { DatabaseService } from './database/database.service';
 import { LicenseAccessService } from './core/licensing/license-access.service';
+import { AuthService } from './features/auth/services/auth.service';
 
 function initializeLocalAndLicenseState(
   database: DatabaseService,
+  auth: AuthService,
   licenseAccess: LicenseAccessService,
 ): () => Promise<void> {
   return async () => {
     await database.initialize();
+    await auth.restoreSession();
     await licenseAccess.initialize();
   };
 }
@@ -33,7 +36,7 @@ function initializeLocalAndLicenseState(
     {
       provide: APP_INITIALIZER,
       useFactory: initializeLocalAndLicenseState,
-      deps: [DatabaseService, LicenseAccessService],
+      deps: [DatabaseService, AuthService, LicenseAccessService],
       multi: true,
     },
   ],

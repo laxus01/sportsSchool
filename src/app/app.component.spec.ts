@@ -4,6 +4,7 @@ import { AppComponent } from './app.component';
 import { AppModule } from './app.module';
 import { LicenseAccessService } from './core/licensing/license-access.service';
 import { DatabaseService } from './database/database.service';
+import { AuthService } from './features/auth/services/auth.service';
 
 describe('AppComponent', () => {
 
@@ -18,6 +19,10 @@ describe('AppComponent', () => {
         {
           provide: DatabaseService,
           useValue: { initialize: () => Promise.resolve() },
+        },
+        {
+          provide: AuthService,
+          useValue: { restoreSession: () => Promise.resolve(false) },
         },
       ],
     }).compileComponents();

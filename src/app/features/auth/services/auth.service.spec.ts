@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { SQLiteDBConnection } from '@capacitor-community/sqlite';
+import { Preferences } from '@capacitor/preferences';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DatabaseService } from '../../../database/database.service';
@@ -16,9 +17,20 @@ interface StoredCredential {
 
 describe('AuthService', () => {
   let users: StoredCredential[];
+  let preferences: Map<string, string>;
   let connection: SQLiteDBConnection;
 
   beforeEach(() => {
+    preferences = new Map();
+    vi.spyOn(Preferences, 'get').mockImplementation(async ({ key }) => ({
+      value: preferences.get(key) ?? null,
+    }));
+    vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
+      preferences.set(key, value);
+    });
+    vi.spyOn(Preferences, 'remove').mockImplementation(async ({ key }) => {
+      preferences.delete(key);
+    });
     vi.stubGlobal(
       'crypto',
       {
@@ -92,6 +104,7 @@ describe('AuthService', () => {
   afterEach(() => {
     TestBed.resetTestingModule();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('stores a password verifier and authenticates with the matching password', async () => {
@@ -106,10 +119,39 @@ describe('AuthService', () => {
     expect(users[0].salt).toBeTruthy();
     expect(users[0].iteraciones).toBe(600_000);
 
-    auth.logout();
+    await auth.logout();
     expect(await auth.login('COACH', 'incorrecta')).toBe(false);
     expect(await auth.login(' COACH ', password)).toBe(true);
     expect(auth.isAuthenticated).toBe(true);
     expect(auth.currentUsername).toBe('coach');
+  });
+
+  it('restores a remembered session and clears it when logging out', async () => {
+    const auth = TestBed.inject(AuthService);
+    const password = 'EscuelaDeportiva2026!';
+
+    await auth.createInitialAccount('coach', password);
+    await auth.logout();
+    expect(await auth.login('coach', password, true)).toBe(true);
+    expect(preferences.get('sports-school.remembered-username')).toBe('coach');
+
+    const restartedAuth = TestBed.runInInjectionContext(
+      () => new AuthService(),
+    );
+    expect(await restartedAuth.restoreSession()).toBe(true);
+    expect(restartedAuth.currentUsername).toBe('coach');
+
+    await restartedAuth.logout();
+    expect(preferences.has('sports-school.remembered-username')).toBe(false);
+  });
+
+  it('does not retain the session when remember me is disabled', async () => {
+    const auth = TestBed.inject(AuthService);
+    const password = 'EscuelaDeportiva2026!';
+
+    await auth.createInitialAccount('coach', password);
+    await auth.logout();
+    expect(await auth.login('coach', password)).toBe(true);
+    expect(preferences.has('sports-school.remembered-username')).toBe(false);
   });
 });

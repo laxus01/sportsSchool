@@ -23,6 +23,7 @@ export class LoginPage {
       nonNullable: true,
       validators: [Validators.required],
     }),
+    rememberMe: new FormControl(false, { nonNullable: true }),
   });
 
   readonly isSubmitting = signal(false);
@@ -37,8 +38,8 @@ export class LoginPage {
     this.isSubmitting.set(true);
     this.errorMessage.set('');
     try {
-      const { username, password } = this.form.getRawValue();
-      if (!(await this.auth.login(username, password))) {
+      const { username, password, rememberMe } = this.form.getRawValue();
+      if (!(await this.auth.login(username, password, rememberMe))) {
         this.errorMessage.set('El usuario o la contraseña no son correctos.');
         return;
       }

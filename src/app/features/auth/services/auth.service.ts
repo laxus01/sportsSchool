@@ -1,10 +1,12 @@
 import { inject, Injectable } from '@angular/core';
+import { Preferences } from '@capacitor/preferences';
 
 import { DatabaseService } from '../../../database/database.service';
 
 const PASSWORD_ITERATIONS = 600_000;
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_KEY_LENGTH = 256;
+const REMEMBERED_USERNAME_KEY = 'sports-school.remembered-username';
 
 interface StoredUser {
   nombre_usuario: string;
@@ -27,6 +29,44 @@ export class AuthService {
 
   get currentUsername(): string | null {
     return this.authenticatedUsername;
+  }
+
+  async restoreSession(): Promise<boolean> {
+    let rememberedUsername: string | null;
+    try {
+      rememberedUsername = (
+        await Preferences.get({ key: REMEMBERED_USERNAME_KEY })
+      ).value;
+    } catch {
+      return false;
+    }
+
+    if (!rememberedUsername) {
+      return false;
+    }
+
+    const normalizedUsername = this.normalizeUsername(rememberedUsername);
+    const connection = await this.database.getMaintenanceConnection();
+    const result = await connection.query(
+      `SELECT nombre_usuario, activo
+       FROM usuarios
+       WHERE nombre_usuario = ?
+       LIMIT 1`,
+      [normalizedUsername],
+    );
+    const user = result.values?.[0] as
+      | Pick<StoredUser, 'nombre_usuario' | 'activo'>
+      | undefined;
+
+    if (!user || Number(user.activo) !== 1) {
+      await Preferences.remove({ key: REMEMBERED_USERNAME_KEY }).catch(
+        () => undefined,
+      );
+      return false;
+    }
+
+    this.authenticatedUsername = user.nombre_usuario;
+    return true;
   }
 
   async hasAccounts(): Promise<boolean> {
@@ -76,7 +116,11 @@ export class AuthService {
     }
   }
 
-  async login(username: string, password: string): Promise<boolean> {
+  async login(
+    username: string,
+    password: string,
+    rememberMe = false,
+  ): Promise<boolean> {
     const normalizedUsername = this.normalizeUsername(username);
     const connection = await this.database.getMaintenanceConnection();
     const result = await connection.query(
@@ -89,7 +133,7 @@ export class AuthService {
     const user = result.values?.[0] as StoredUser | undefined;
 
     if (!user || Number(user.activo) !== 1) {
-      this.logout();
+      await this.logout();
       return false;
     }
 
@@ -99,16 +143,26 @@ export class AuthService {
       Number(user.iteraciones),
     );
     if (!this.constantTimeEquals(candidateHash, user.hash_clave)) {
-      this.logout();
+      await this.logout();
       return false;
+    }
+
+    if (rememberMe) {
+      await Preferences.set({
+        key: REMEMBERED_USERNAME_KEY,
+        value: user.nombre_usuario,
+      });
+    } else {
+      await Preferences.remove({ key: REMEMBERED_USERNAME_KEY });
     }
 
     this.authenticatedUsername = user.nombre_usuario;
     return true;
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
     this.authenticatedUsername = null;
+    await Preferences.remove({ key: REMEMBERED_USERNAME_KEY });
   }
 
   private normalizeUsername(username: string): string {

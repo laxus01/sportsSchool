@@ -10,3 +10,16 @@ form {
   display: grid;
   gap: 1.1rem;
 }
+
+.remember-option {
+  display: flex;
+  align-items: center;
+  color: var(--app-muted);
+  font-size: 0.85rem;
+}
+
+.remember-option ion-checkbox {
+  --checkbox-background-checked: var(--app-primary);
+  --border-color-checked: var(--app-primary);
+  --checkmark-color: #fff;
+}

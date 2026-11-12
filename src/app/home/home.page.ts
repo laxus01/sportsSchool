@@ -68,7 +68,7 @@ export class HomePage {
   }
 
   async logout(): Promise<void> {
-    this.auth.logout();
+    await this.auth.logout();
     await this.router.navigateByUrl('/auth/login', { replaceUrl: true });
   }
 }
