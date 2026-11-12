@@ -3,6 +3,13 @@
     <ion-title>Sports School</ion-title>
     <ion-buttons slot="end">
       <ion-button
+        routerLink="/auth/account"
+        aria-label="Mi cuenta"
+        title="Mi cuenta"
+      >
+        <ion-icon [icon]="icons.personOutline" aria-hidden="true"></ion-icon>
+      </ion-button>
+      <ion-button
         (click)="logout()"
         aria-label="Cerrar sesión"
         title="Cerrar sesión"

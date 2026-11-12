@@ -1,18 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { SQLiteDBConnection } from '@capacitor-community/sqlite';
-import { Preferences } from '@capacitor/preferences';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DatabaseService } from '../../../database/database.service';
-import { AuthService } from './auth.service';
-
-vi.mock('@capacitor/preferences', () => ({
-  Preferences: {
-    get: vi.fn(),
-    set: vi.fn(),
-    remove: vi.fn(),
-  },
-}));
+import {
+  AuthService,
+  InvalidCurrentPasswordError,
+  REMEMBERED_SESSION_STORAGE,
+} from './auth.service';
 
 interface StoredCredential {
   id: string;
@@ -25,26 +20,11 @@ interface StoredCredential {
 
 describe('AuthService', () => {
   let users: StoredCredential[];
-  let preferences: Map<string, string>;
+  let rememberedUsername: string | null;
   let connection: SQLiteDBConnection;
 
   beforeEach(() => {
-    preferences = new Map();
-    vi.mocked(Preferences.get)
-      .mockReset()
-      .mockImplementation(async ({ key }) => ({
-        value: preferences.get(key) ?? null,
-      }));
-    vi.mocked(Preferences.set)
-      .mockReset()
-      .mockImplementation(async ({ key, value }) => {
-        preferences.set(key, value);
-      });
-    vi.mocked(Preferences.remove)
-      .mockReset()
-      .mockImplementation(async ({ key }) => {
-        preferences.delete(key);
-      });
+    rememberedUsername = null;
     vi.stubGlobal(
       'crypto',
       {
@@ -91,7 +71,29 @@ describe('AuthService', () => {
           ),
         };
       }),
-      run: vi.fn(async (_statement: string, values?: unknown[]) => {
+      run: vi.fn(async (statement: string, values?: unknown[]) => {
+        if (statement.includes('SET nombre_usuario')) {
+          const user = users.find(
+            (candidate) => candidate.id === String(values?.[1]),
+          );
+          if (user) {
+            user.nombre_usuario = String(values?.[0]);
+          }
+          return {};
+        }
+
+        if (statement.includes('SET hash_clave')) {
+          const user = users.find(
+            (candidate) => candidate.id === String(values?.[3]),
+          );
+          if (user) {
+            user.hash_clave = String(values?.[0]);
+            user.salt = String(values?.[1]);
+            user.iteraciones = Number(values?.[2]);
+          }
+          return {};
+        }
+
         users.push({
           id: String(values?.[0]),
           nombre_usuario: String(values?.[1]),
@@ -110,6 +112,18 @@ describe('AuthService', () => {
         {
           provide: DatabaseService,
           useValue: { getMaintenanceConnection: async () => connection },
+        },
+        {
+          provide: REMEMBERED_SESSION_STORAGE,
+          useValue: {
+            getUsername: async () => rememberedUsername,
+            setUsername: async (username: string) => {
+              rememberedUsername = username;
+            },
+            clear: async () => {
+              rememberedUsername = null;
+            },
+          },
         },
       ],
     });
@@ -146,7 +160,7 @@ describe('AuthService', () => {
     await auth.createInitialAccount('coach', password);
     await auth.logout();
     expect(await auth.login('coach', password, true)).toBe(true);
-    expect(preferences.get('sports-school.remembered-username')).toBe('coach');
+    expect(rememberedUsername).toBe('coach');
 
     const restartedAuth = TestBed.runInInjectionContext(
       () => new AuthService(),
@@ -155,7 +169,7 @@ describe('AuthService', () => {
     expect(restartedAuth.currentUsername).toBe('coach');
 
     await restartedAuth.logout();
-    expect(preferences.has('sports-school.remembered-username')).toBe(false);
+    expect(rememberedUsername).toBeNull();
   });
 
   it('does not retain the session when remember me is disabled', async () => {
@@ -165,6 +179,50 @@ describe('AuthService', () => {
     await auth.createInitialAccount('coach', password);
     await auth.logout();
     expect(await auth.login('coach', password)).toBe(true);
-    expect(preferences.has('sports-school.remembered-username')).toBe(false);
+    expect(rememberedUsername).toBeNull();
+  });
+
+  it('changes the username after verification and updates a remembered session', async () => {
+    const auth = TestBed.inject(AuthService);
+    const password = 'EscuelaDeportiva2026!';
+
+    await auth.createInitialAccount('coach', password);
+    await auth.logout();
+    await auth.login('coach', password, true);
+
+    await auth.changeUsername(password, 'new-coach');
+
+    expect(users[0].nombre_usuario).toBe('new-coach');
+    expect(auth.currentUsername).toBe('new-coach');
+    expect(rememberedUsername).toBe('new-coach');
+  });
+
+  it('rejects a username change when the current password is incorrect', async () => {
+    const auth = TestBed.inject(AuthService);
+    await auth.createInitialAccount('coach', 'EscuelaDeportiva2026!');
+
+    await expect(
+      auth.changeUsername('incorrecta', 'new-coach'),
+    ).rejects.toBeInstanceOf(InvalidCurrentPasswordError);
+    expect(users[0].nombre_usuario).toBe('coach');
+  });
+
+  it('changes the password without storing the password in preferences', async () => {
+    const auth = TestBed.inject(AuthService);
+    const currentPassword = 'EscuelaDeportiva2026!';
+    const newPassword = 'OtraClaveSegura2026!';
+
+    await auth.createInitialAccount('coach', currentPassword);
+    await auth.logout();
+    await auth.login('coach', currentPassword, true);
+    await auth.changePassword(currentPassword, newPassword);
+
+    expect(users[0].hash_clave).not.toBe(currentPassword);
+    expect(rememberedUsername).toBe('coach');
+    expect(rememberedUsername).not.toBe(newPassword);
+
+    await auth.logout();
+    expect(await auth.login('coach', currentPassword)).toBe(false);
+    expect(await auth.login('coach', newPassword)).toBe(true);
   });
 });

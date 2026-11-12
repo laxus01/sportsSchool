@@ -98,4 +98,15 @@ describe('HomePage', () => {
     expect(logoutButton?.querySelector('ion-icon')?.getAttribute('aria-hidden'))
       .toBe('true');
   });
+
+  it('provides access to account security from the home toolbar', () => {
+    const accountButton = fixture.nativeElement.querySelector(
+      'ion-button[aria-label="Mi cuenta"]',
+    ) as HTMLIonButtonElement | null;
+
+    expect(accountButton).not.toBeNull();
+    expect(
+      accountButton?.querySelector('ion-icon')?.getAttribute('aria-hidden'),
+    ).toBe('true');
+  });
 });

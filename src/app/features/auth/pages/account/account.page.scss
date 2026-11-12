@@ -1,0 +1,141 @@
+.account-toolbar {
+  --background: var(--app-surface);
+  --color: var(--app-text);
+  --border-color: var(--app-border);
+}
+
+.account-content {
+  --background: var(--app-canvas);
+  color: var(--app-text);
+}
+
+.account-layout {
+  width: min(100% - 2rem, 70rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 2.5rem) 0 3rem;
+}
+
+.section-kicker,
+.account-label {
+  margin: 0;
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.account-intro h1 {
+  margin: 0.45rem 0;
+  font-size: clamp(1.7rem, 5vw, 2.2rem);
+}
+
+.account-intro > p:last-child,
+.account-summary > div > p:last-child,
+.account-card-heading > div > p:last-child {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 0.86rem;
+}
+
+.account-summary,
+.account-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.account-summary {
+  margin-bottom: 1rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.account-avatar,
+.account-card-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: var(--app-aqua);
+  color: var(--app-primary);
+}
+
+.account-avatar {
+  width: 3.2rem;
+  height: 3.2rem;
+  font-size: 1.45rem;
+}
+
+.account-summary h2,
+.account-card-heading h2 {
+  margin: 0.2rem 0 0.35rem;
+  color: var(--app-text);
+}
+
+.account-forms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem;
+}
+
+.account-card {
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.account-card-heading {
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.account-card-icon {
+  width: 2.65rem;
+  height: 2.65rem;
+  font-size: 1.2rem;
+}
+
+.account-card form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.account-card ion-input {
+  --background: var(--app-surface);
+  --border-color: var(--app-border);
+  --border-radius: var(--app-radius-control);
+  --color: var(--app-text);
+  --highlight-color-focused: var(--app-primary);
+}
+
+.field-hint,
+.form-message {
+  margin: -0.45rem 0 0;
+  font-size: 0.8rem;
+}
+
+.field-error,
+.form-error {
+  color: var(--app-danger);
+}
+
+.form-success {
+  color: var(--app-primary);
+}
+
+.account-submit {
+  --background: var(--app-primary);
+  --border-radius: var(--app-radius-control);
+  text-transform: none;
+}
+
+@media (max-width: 760px) {
+  .account-forms {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .account-layout {
+    width: min(100% - 1.5rem, 70rem);
+    padding-top: 1rem;
+  }
+}

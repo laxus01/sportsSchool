@@ -1,0 +1,190 @@
+<ion-header>
+  <ion-toolbar class="account-toolbar">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Volver"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Mi cuenta</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="account-content app-page">
+  <main class="account-layout">
+    <header class="account-intro">
+      <p class="section-kicker">CUENTA Y SEGURIDAD</p>
+      <h1>Mi cuenta</h1>
+      <p>Administra tu usuario y protege el acceso a la escuela.</p>
+    </header>
+
+    <section class="account-summary app-card" aria-label="Cuenta actual">
+      <span class="account-avatar" aria-hidden="true">
+        <ion-icon [icon]="icons.personOutline"></ion-icon>
+      </span>
+      <div>
+        <p class="account-label">USUARIO ACTUAL</p>
+        <h2>{{ currentUsername() }}</h2>
+        <p>Cuenta local de este dispositivo</p>
+      </div>
+    </section>
+
+    <div class="account-forms">
+      <section class="account-card app-card">
+        <div class="account-card-heading">
+          <span class="account-card-icon" aria-hidden="true">
+            <ion-icon [icon]="icons.personOutline"></ion-icon>
+          </span>
+          <div>
+            <p class="section-kicker">IDENTIFICACIÓN</p>
+            <h2>Cambiar usuario</h2>
+            <p>Confirma tu contraseña para actualizar el nombre de acceso.</p>
+          </div>
+        </div>
+
+        <form
+          [formGroup]="usernameForm"
+          (ngSubmit)="submitUsername()"
+          novalidate
+        >
+          <ion-input
+            label="Contraseña actual"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="currentPassword"
+            type="password"
+            autocomplete="current-password"
+            errorText="Ingresa tu contraseña actual"
+          >
+            <ion-input-password-toggle slot="end"></ion-input-password-toggle>
+          </ion-input>
+
+          <ion-input
+            label="Nuevo usuario"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="newUsername"
+            type="text"
+            autocomplete="username"
+            autocapitalize="none"
+            inputmode="text"
+          ></ion-input>
+          @if (
+            usernameForm.controls.newUsername.touched &&
+            usernameForm.controls.newUsername.invalid
+          ) {
+            <p class="field-hint field-error">
+              Usa un usuario de 3 a 50 caracteres.
+            </p>
+          }
+
+          @if (usernameError()) {
+            <p class="form-message form-error" role="alert">
+              {{ usernameError() }}
+            </p>
+          }
+          @if (usernameSuccess()) {
+            <p class="form-message form-success" role="status">
+              {{ usernameSuccess() }}
+            </p>
+          }
+
+          <ion-button
+            class="account-submit"
+            type="submit"
+            expand="block"
+            [disabled]="isUpdatingUsername()"
+          >
+            {{ isUpdatingUsername() ? 'Guardando…' : 'Guardar usuario' }}
+          </ion-button>
+        </form>
+      </section>
+
+      <section class="account-card app-card">
+        <div class="account-card-heading">
+          <span class="account-card-icon" aria-hidden="true">
+            <ion-icon [icon]="icons.lockClosedOutline"></ion-icon>
+          </span>
+          <div>
+            <p class="section-kicker">ACCESO</p>
+            <h2>Cambiar contraseña</h2>
+            <p>Elige una contraseña nueva de al menos 8 caracteres.</p>
+          </div>
+        </div>
+
+        <form
+          [formGroup]="passwordForm"
+          (ngSubmit)="submitPassword()"
+          novalidate
+        >
+          <ion-input
+            label="Contraseña actual"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="currentPassword"
+            type="password"
+            autocomplete="current-password"
+            errorText="Ingresa tu contraseña actual"
+          >
+            <ion-input-password-toggle slot="end"></ion-input-password-toggle>
+          </ion-input>
+
+          <ion-input
+            label="Nueva contraseña"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="newPassword"
+            type="password"
+            autocomplete="new-password"
+          >
+            <ion-input-password-toggle slot="end"></ion-input-password-toggle>
+          </ion-input>
+          @if (
+            passwordForm.controls.newPassword.touched &&
+            passwordForm.controls.newPassword.invalid
+          ) {
+            <p class="field-hint field-error">
+              La contraseña debe tener al menos 8 caracteres.
+            </p>
+          }
+
+          <ion-input
+            label="Repite la contraseña nueva"
+            labelPlacement="stacked"
+            fill="outline"
+            formControlName="confirmPassword"
+            type="password"
+            autocomplete="new-password"
+          >
+            <ion-input-password-toggle slot="end"></ion-input-password-toggle>
+          </ion-input>
+          @if (
+            passwordForm.controls.confirmPassword.touched &&
+            passwordForm.hasError('passwordMismatch')
+          ) {
+            <p class="field-hint field-error">
+              Las contraseñas nuevas no coinciden.
+            </p>
+          }
+
+          @if (passwordError()) {
+            <p class="form-message form-error" role="alert">
+              {{ passwordError() }}
+            </p>
+          }
+          @if (passwordSuccess()) {
+            <p class="form-message form-success" role="status">
+              {{ passwordSuccess() }}
+            </p>
+          }
+
+          <ion-button
+            class="account-submit"
+            type="submit"
+            expand="block"
+            [disabled]="isUpdatingPassword()"
+          >
+            {{ isUpdatingPassword() ? 'Guardando…' : 'Guardar contraseña' }}
+          </ion-button>
+        </form>
+      </section>
+    </div>
+  </main>
+</ion-content>

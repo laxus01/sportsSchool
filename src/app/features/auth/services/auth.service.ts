@@ -1,4 +1,5 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, InjectionToken } from '@angular/core';
+import { SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { Preferences } from '@capacitor/preferences';
 
 import { DatabaseService } from '../../../database/database.service';
@@ -8,6 +9,33 @@ const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_KEY_LENGTH = 256;
 const REMEMBERED_USERNAME_KEY = 'sports-school.remembered-username';
 
+export interface RememberedSessionStorage {
+  getUsername(): Promise<string | null>;
+  setUsername(username: string): Promise<void>;
+  clear(): Promise<void>;
+}
+
+export const REMEMBERED_SESSION_STORAGE =
+  new InjectionToken<RememberedSessionStorage>(
+    'REMEMBERED_SESSION_STORAGE',
+    {
+      providedIn: 'root',
+      factory: () => ({
+        getUsername: async () =>
+          (await Preferences.get({ key: REMEMBERED_USERNAME_KEY })).value,
+        setUsername: async (username) => {
+          await Preferences.set({
+            key: REMEMBERED_USERNAME_KEY,
+            value: username,
+          });
+        },
+        clear: async () => {
+          await Preferences.remove({ key: REMEMBERED_USERNAME_KEY });
+        },
+      }),
+    },
+  );
+
 interface StoredUser {
   nombre_usuario: string;
   hash_clave: string;
@@ -16,11 +44,19 @@ interface StoredUser {
   activo: number;
 }
 
+interface StoredAccount extends StoredUser {
+  id: string;
+}
+
 export class InitialAccountAlreadyExistsError extends Error {}
+export class AuthenticationRequiredError extends Error {}
+export class InvalidCurrentPasswordError extends Error {}
+export class UsernameAlreadyInUseError extends Error {}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly database = inject(DatabaseService);
+  private readonly rememberedSession = inject(REMEMBERED_SESSION_STORAGE);
   private authenticatedUsername: string | null = null;
 
   get isAuthenticated(): boolean {
@@ -34,9 +70,7 @@ export class AuthService {
   async restoreSession(): Promise<boolean> {
     let rememberedUsername: string | null;
     try {
-      rememberedUsername = (
-        await Preferences.get({ key: REMEMBERED_USERNAME_KEY })
-      ).value;
+      rememberedUsername = await this.rememberedSession.getUsername();
     } catch {
       return false;
     }
@@ -59,9 +93,7 @@ export class AuthService {
       | undefined;
 
     if (!user || Number(user.activo) !== 1) {
-      await Preferences.remove({ key: REMEMBERED_USERNAME_KEY }).catch(
-        () => undefined,
-      );
+      await this.rememberedSession.clear().catch(() => undefined);
       return false;
     }
 
@@ -148,25 +180,165 @@ export class AuthService {
     }
 
     if (rememberMe) {
-      await Preferences.set({
-        key: REMEMBERED_USERNAME_KEY,
-        value: user.nombre_usuario,
-      });
+      await this.rememberedSession.setUsername(user.nombre_usuario);
     } else {
-      await Preferences.remove({ key: REMEMBERED_USERNAME_KEY });
+      await this.rememberedSession.clear();
     }
 
     this.authenticatedUsername = user.nombre_usuario;
     return true;
   }
 
+  async changeUsername(
+    currentPassword: string,
+    newUsername: string,
+  ): Promise<void> {
+    const normalizedUsername = this.normalizeUsername(newUsername);
+    this.validateUsername(normalizedUsername);
+    const { connection, user } =
+      await this.getAuthenticatedAccount(currentPassword);
+
+    if (
+      normalizedUsername.toLowerCase() === user.nombre_usuario.toLowerCase()
+    ) {
+      throw new Error('El nuevo usuario debe ser diferente al actual.');
+    }
+
+    const duplicate = await connection.query(
+      `SELECT id
+       FROM usuarios
+       WHERE nombre_usuario = ?
+       LIMIT 1`,
+      [normalizedUsername],
+    );
+    if (duplicate.values?.length) {
+      throw new UsernameAlreadyInUseError();
+    }
+
+    const previousUsername = user.nombre_usuario;
+    await connection.beginTransaction();
+    try {
+      await connection.run(
+        'UPDATE usuarios SET nombre_usuario = ? WHERE id = ?',
+        [normalizedUsername, user.id],
+        false,
+      );
+      await connection.commitTransaction();
+    } catch (error) {
+      await connection.rollbackTransaction();
+      throw error;
+    }
+
+    this.authenticatedUsername = normalizedUsername;
+    await this.updateRememberedUsername(
+      previousUsername,
+      normalizedUsername,
+    );
+  }
+
+  async changePassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    if (newPassword.length < PASSWORD_MIN_LENGTH) {
+      throw new Error(
+        `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`,
+      );
+    }
+
+    const { connection, user } =
+      await this.getAuthenticatedAccount(currentPassword);
+    if (newPassword === currentPassword) {
+      throw new Error('La nueva contraseña debe ser diferente a la actual.');
+    }
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const hash = await this.derivePassword(
+      newPassword,
+      salt,
+      PASSWORD_ITERATIONS,
+    );
+
+    await connection.beginTransaction();
+    try {
+      await connection.run(
+        `UPDATE usuarios
+         SET hash_clave = ?, salt = ?, iteraciones = ?
+         WHERE id = ?`,
+        [hash, this.encodeBase64(salt), PASSWORD_ITERATIONS, user.id],
+        false,
+      );
+      await connection.commitTransaction();
+    } catch (error) {
+      await connection.rollbackTransaction();
+      throw error;
+    }
+  }
+
   async logout(): Promise<void> {
     this.authenticatedUsername = null;
-    await Preferences.remove({ key: REMEMBERED_USERNAME_KEY });
+    await this.rememberedSession.clear();
+  }
+
+  private async getAuthenticatedAccount(
+    currentPassword: string,
+  ): Promise<{ connection: SQLiteDBConnection; user: StoredAccount }> {
+    if (!this.authenticatedUsername) {
+      throw new AuthenticationRequiredError();
+    }
+
+    const connection = await this.database.getMaintenanceConnection();
+    const result = await connection.query(
+      `SELECT id, nombre_usuario, hash_clave, salt, iteraciones, activo
+       FROM usuarios
+       WHERE nombre_usuario = ?
+       LIMIT 1`,
+      [this.authenticatedUsername],
+    );
+    const user = result.values?.[0] as StoredAccount | undefined;
+
+    if (!user || Number(user.activo) !== 1) {
+      this.authenticatedUsername = null;
+      throw new AuthenticationRequiredError();
+    }
+
+    const candidateHash = await this.derivePassword(
+      currentPassword,
+      this.decodeBase64(user.salt),
+      Number(user.iteraciones),
+    );
+    if (!this.constantTimeEquals(candidateHash, user.hash_clave)) {
+      throw new InvalidCurrentPasswordError();
+    }
+
+    return { connection, user };
+  }
+
+  private async updateRememberedUsername(
+    currentUsername: string,
+    newUsername: string,
+  ): Promise<void> {
+    try {
+      const value = await this.rememberedSession.getUsername();
+      if (
+        value &&
+        this.normalizeUsername(value).toLowerCase() ===
+          currentUsername.toLowerCase()
+      ) {
+        await this.rememberedSession.setUsername(newUsername);
+      }
+    } catch {
+      return;
+    }
   }
 
   private normalizeUsername(username: string): string {
     return username.trim();
+  }
+
+  private validateUsername(username: string): void {
+    if (username.length < 3 || username.length > 50) {
+      throw new Error('El usuario debe tener entre 3 y 50 caracteres.');
+    }
   }
 
   private validateCredentials(
@@ -174,9 +346,7 @@ export class AuthService {
     password: string,
     requireStrongPassword: boolean,
   ): void {
-    if (username.length < 3 || username.length > 50) {
-      throw new Error('El usuario debe tener entre 3 y 50 caracteres.');
-    }
+    this.validateUsername(username);
     if (requireStrongPassword && password.length < PASSWORD_MIN_LENGTH) {
       throw new Error(
         `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`,

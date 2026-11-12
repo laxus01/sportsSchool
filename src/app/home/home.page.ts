@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { powerOutline } from 'ionicons/icons';
+import { personOutline, powerOutline } from 'ionicons/icons';
 
 import { LicenseAccessService } from '../core/licensing/license-access.service';
 import { AuthService } from '../features/auth/services/auth.service';
@@ -19,7 +19,7 @@ export class HomePage {
   private readonly router = inject(Router);
   private readonly license = inject(LicenseAccessService);
 
-  readonly icons = { powerOutline };
+  readonly icons = { personOutline, powerOutline };
   readonly licenseStatus = this.license.status;
   readonly licenseCanWrite = this.license.canWrite;
   readonly menuGroups = MANAGEMENT_GROUPS.map((name) => ({
