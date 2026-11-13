@@ -1,14 +1,22 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
 import {
   addOutline,
   cardOutline,
   chevronBackOutline,
   chevronDownOutline,
   pencilOutline,
+  printOutline,
+  shareOutline,
 } from 'ionicons/icons';
 import { DatabaseService } from '../../../../database/database.service';
 import { AuthService } from '../../../auth/services/auth.service';
+import {
+  PaymentReceipt,
+  PaymentReceiptImageService,
+} from './payment-receipt-image.service';
 
 interface AthleteRecord {
   id: string;
@@ -39,6 +47,7 @@ interface TransferEntity {
 
 interface PaymentRecord {
   id: string;
+  consecutivo_recibo: number;
   fecha_pago: string;
   monto_pesos: number;
   medio_pago: 'efectivo' | 'transferencia';
@@ -87,6 +96,7 @@ const localDateString = (date = new Date()): string => {
 export class PagosPage {
   private readonly database = inject(DatabaseService);
   private readonly auth = inject(AuthService);
+  private readonly receiptImages = inject(PaymentReceiptImageService);
 
   readonly icons = {
     addOutline,
@@ -94,6 +104,8 @@ export class PagosPage {
     chevronBackOutline,
     chevronDownOutline,
     pencilOutline,
+    printOutline,
+    shareOutline,
   };
   readonly payments = signal<PaymentRecord[]>([]);
   readonly athletes = signal<AthleteRecord[]>([]);
@@ -108,9 +120,13 @@ export class PagosPage {
   readonly isVoidModalOpen = signal(false);
   readonly selectedPaymentToVoid = signal<PaymentRecord | null>(null);
   readonly isEditModalOpen = signal(false);
+  readonly isReceiptModalOpen = signal(false);
+  readonly isSharingReceipt = signal(false);
   readonly editingPayment = signal<PaymentRecord | null>(null);
+  readonly receipt = signal<PaymentReceipt | null>(null);
   readonly pageError = signal('');
   readonly modalError = signal('');
+  readonly receiptError = signal('');
   readonly editPaymentForm = new FormGroup({
     referencia: new FormControl('', {
       nonNullable: true,
@@ -364,6 +380,228 @@ export class PagosPage {
       : payment.entidad ?? 'Transferencia';
   }
 
+  formatReceiptNumber(number: number): string {
+    return String(number).padStart(6, '0');
+  }
+
+  formatReceiptDate(date: string): string {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : date;
+  }
+
+  formatReceiptConcept(description: string): string {
+    const match = /^Mensualidad (\d{4}-\d{2})$/.exec(description);
+    return match
+      ? `Mensualidad ${this.formatPeriod(match[1])}`
+      : description;
+  }
+
+  async openReceipt(payment: PaymentRecord): Promise<void> {
+    this.receiptError.set('');
+    this.receipt.set(null);
+    try {
+      const database = await this.database.getConnection();
+      const [schoolResult, conceptsResult] = await Promise.all([
+        database.query(
+          `SELECT nombre, identificacion_fiscal
+           FROM escuela
+           WHERE id = 1
+           LIMIT 1`,
+        ),
+        database.query(
+          `SELECT descripcion, monto_pesos
+           FROM (
+             SELECT
+               'Mensualidad ' || m.periodo AS descripcion,
+               pm.monto_aplicado_pesos AS monto_pesos
+             FROM pago_mensualidad pm
+             JOIN mensualidades m ON m.id = pm.mensualidad_id
+             WHERE pm.pago_id = ?
+             UNION ALL
+             SELECT
+               'Inscripción' AS descripcion,
+               pi.monto_aplicado_pesos AS monto_pesos
+             FROM pago_inscripcion pi
+             WHERE pi.pago_id = ?
+             UNION ALL
+             SELECT
+               ca.descripcion,
+               pc.monto_aplicado_pesos AS monto_pesos
+             FROM pago_cargo_adicional pc
+             JOIN cargos_adicionales ca
+               ON ca.id = pc.cargo_adicional_id
+             WHERE pc.pago_id = ?
+           )
+           ORDER BY descripcion`,
+          [payment.id, payment.id, payment.id],
+        ),
+      ]);
+      const school = schoolResult.values?.[0];
+      this.receipt.set({
+        consecutivo_recibo: payment.consecutivo_recibo,
+        fecha_pago: payment.fecha_pago,
+        medio_pago: this.paymentMethodLabel(payment),
+        deportista: payment.deportistas ?? 'Deportista',
+        escuela: String(school?.['nombre'] ?? 'Escuela deportiva'),
+        nit: (school?.['identificacion_fiscal'] as string | null) ?? null,
+        conceptos: (conceptsResult.values ?? []).map((row) => ({
+          descripcion: String(row['descripcion']),
+          monto_pesos: Number(row['monto_pesos']),
+        })),
+        monto_pesos: Number(payment.monto_pesos),
+      });
+      this.isReceiptModalOpen.set(true);
+    } catch {
+      this.receiptError.set('No se pudo generar el recibo. Inténtalo de nuevo.');
+      this.isReceiptModalOpen.set(true);
+    }
+  }
+
+  closeReceipt(): void {
+    this.isReceiptModalOpen.set(false);
+    this.receipt.set(null);
+    this.receiptError.set('');
+  }
+
+  async shareReceipt(): Promise<void> {
+    const receipt = this.receipt();
+    if (!receipt || this.isSharingReceipt()) {
+      return;
+    }
+
+    const concepts = receipt.conceptos
+      .map(
+        (concept) =>
+          `* ${this.formatReceiptConcept(concept.descripcion)}: ${this.formatAmount(concept.monto_pesos)}`,
+      )
+      .join('\n');
+    const text = [
+      receipt.escuela,
+      `NIT: ${receipt.nit || 'No registrado'}`,
+      `RECIBO DE PAGO No. ${this.formatReceiptNumber(receipt.consecutivo_recibo)}`,
+      `Deportista: ${receipt.deportista}`,
+      `Fecha: ${this.formatReceiptDate(receipt.fecha_pago)}`,
+      `Medio de pago: ${receipt.medio_pago}`,
+      '',
+      'Detalle:',
+      concepts || 'Sin conceptos asociados',
+      '',
+      `Total recibido: ${this.formatAmount(receipt.monto_pesos)}`,
+    ].join('\n');
+
+    this.isSharingReceipt.set(true);
+    this.receiptError.set('');
+    let imageUri: string | null = null;
+    try {
+      const title = `Recibo de pago ${this.formatReceiptNumber(receipt.consecutivo_recibo)}`;
+      if (Capacitor.getPlatform() === 'web') {
+        await Share.share({
+          title,
+          text,
+          dialogTitle: 'Compartir recibo por WhatsApp',
+        });
+      } else {
+        imageUri = await this.receiptImages.createPng(receipt);
+        await Share.share({
+          title,
+          files: [imageUri],
+          dialogTitle: 'Compartir recibo por WhatsApp',
+        });
+      }
+    } catch {
+      this.receiptError.set(
+        'No se pudo abrir el menú para compartir. Inténtalo de nuevo.',
+      );
+    } finally {
+      if (imageUri) {
+        try {
+          await this.receiptImages.deletePng(imageUri);
+        } catch {
+          if (!this.receiptError()) {
+            this.receiptError.set(
+              'El recibo se compartió, pero no se pudo eliminar la imagen temporal.',
+            );
+          }
+        }
+      }
+      this.isSharingReceipt.set(false);
+    }
+  }
+
+  printReceipt(): void {
+    const receipt = this.receipt();
+    if (!receipt) {
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      this.receiptError.set(
+        'El navegador bloqueó la ventana de impresión. Permite las ventanas emergentes e inténtalo de nuevo.',
+      );
+      return;
+    }
+
+    const conceptRows = receipt.conceptos
+      .map(
+        (concept) => `
+          <tr>
+            <td>${this.escapeHtml(this.formatReceiptConcept(concept.descripcion))}</td>
+            <td>${this.escapeHtml(this.formatAmount(concept.monto_pesos))}</td>
+          </tr>`,
+      )
+      .join('');
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html>
+      <html lang="es">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Recibo ${this.formatReceiptNumber(receipt.consecutivo_recibo)}</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 2rem; color: #172b2a; font: 14px Arial, sans-serif; }
+            main { width: min(100%, 38rem); margin: 0 auto; border: 1px solid #d7e1df; border-radius: 12px; padding: 2rem; }
+            header { padding-bottom: 1.25rem; border-bottom: 2px solid #146b64; }
+            h1 { margin: 0 0 .4rem; color: #146b64; font-size: 1.5rem; }
+            header p, .meta p { margin: .3rem 0; }
+            .number { margin-top: 1.2rem; font-weight: 700; }
+            h2 { margin: 1.4rem 0 .5rem; font-size: 1rem; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border-bottom: 1px solid #d7e1df; padding: .7rem .25rem; text-align: left; }
+            th:last-child, td:last-child { text-align: right; white-space: nowrap; }
+            tfoot td { border: 0; font-size: 1.05rem; font-weight: 700; }
+            .thanks { margin: 1.5rem 0 0; color: #536563; text-align: center; }
+            @media print { body { padding: 0; } main { width: 100%; border: 0; } }
+          </style>
+        </head>
+        <body>
+          <main>
+            <header>
+              <h1>${this.escapeHtml(receipt.escuela)}</h1>
+              <p>NIT: ${this.escapeHtml(receipt.nit || 'No registrado')}</p>
+              <p class="number">RECIBO DE PAGO · No. ${this.formatReceiptNumber(receipt.consecutivo_recibo)}</p>
+            </header>
+            <section class="meta">
+              <p><strong>Deportista:</strong> ${this.escapeHtml(receipt.deportista)}</p>
+              <p><strong>Fecha:</strong> ${this.escapeHtml(this.formatReceiptDate(receipt.fecha_pago))}</p>
+              <p><strong>Medio de pago:</strong> ${this.escapeHtml(receipt.medio_pago)}</p>
+            </section>
+            <h2>Detalle del pago</h2>
+            <table>
+              <thead><tr><th>Concepto</th><th>Valor</th></tr></thead>
+              <tbody>${conceptRows}</tbody>
+              <tfoot><tr><td>Total recibido</td><td>${this.escapeHtml(this.formatAmount(receipt.monto_pesos))}</td></tr></tfoot>
+            </table>
+            <p class="thanks">Gracias por su pago.</p>
+          </main>
+        </body>
+      </html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+
   async savePayment(): Promise<void> {
     this.paymentForm.markAllAsTouched();
     if (
@@ -397,9 +635,11 @@ export class PagosPage {
       const database = await this.database.getConnection();
       const values = this.paymentForm.getRawValue();
       const paymentId = crypto.randomUUID();
+      const athlete = this.selectedAthlete()!;
       const transferEntityId =
         values.medioPago === 'transferencia' ? values.entidadId : null;
 
+      let receiptNumber = 1;
       await database.beginTransaction();
       try {
         const selectedIds = new Set(this.selectedObligationIds());
@@ -417,14 +657,23 @@ export class PagosPage {
           throw new Error('BALANCE_CHANGED');
         }
 
+        const receiptNumberResult = await database.query(
+          `SELECT COALESCE(MAX(consecutivo_recibo), 0) + 1 AS siguiente
+           FROM pagos`,
+        );
+        receiptNumber = Number(
+          receiptNumberResult.values?.[0]?.['siguiente'] ?? 1,
+        );
+
         await database.run(
           `INSERT INTO pagos
-            (id, acudiente_id, fecha_pago, monto_pesos, medio_pago,
+            (id, consecutivo_recibo, acudiente_id, fecha_pago, monto_pesos, medio_pago,
              entidad_transferencia_id, referencia, observacion, creado_por,
              estado)
-           VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, 'registrado')`,
+           VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, 'registrado')`,
           [
             paymentId,
+            receiptNumber,
             values.fechaPago,
             amount,
             values.medioPago,
@@ -486,7 +735,7 @@ export class PagosPage {
           'PAGO_REGISTRADO',
           'pago',
           paymentId,
-          JSON.stringify({ deportistaId: this.selectedAthlete()!.id, applied }),
+          JSON.stringify({ deportistaId: athlete.id, applied }),
         );
         await database.commitTransaction();
       } catch (error) {
@@ -496,6 +745,23 @@ export class PagosPage {
 
       this.isPaymentModalOpen.set(false);
       await this.loadPage();
+      const transferEntity = this.transferEntities().find(
+        (entity) => entity.id === transferEntityId,
+      );
+      await this.openReceipt({
+        id: paymentId,
+        consecutivo_recibo: receiptNumber,
+        fecha_pago: values.fechaPago,
+        monto_pesos: amount,
+        medio_pago: values.medioPago,
+        entidad: transferEntity?.nombre ?? null,
+        referencia: values.referencia.trim() || null,
+        observacion: values.observacion.trim() || null,
+        deportistas: `${athlete.nombres} ${athlete.apellidos}`,
+        periodos: null,
+        estado: 'registrado',
+        motivo_anulacion: null,
+      });
     } catch (error) {
       this.modalError.set(
         String(error).includes('BALANCE_CHANGED')
@@ -515,6 +781,7 @@ export class PagosPage {
       const result = await database.query(
         `SELECT
            p.id,
+           p.consecutivo_recibo,
            p.fecha_pago,
            p.monto_pesos,
            p.medio_pago,
@@ -860,5 +1127,18 @@ export class PagosPage {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLocaleLowerCase();
+  }
+
+  private escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, (character) => {
+      const entities: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      };
+      return entities[character];
+    });
   }
 }

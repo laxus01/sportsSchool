@@ -52,6 +52,10 @@ import {
   ATHLETE_IDENTIFICATION_MIGRATION_STATEMENTS,
   ATHLETE_IDENTIFICATION_MIGRATION_VERSION,
 } from './migrations/011-athlete-identification';
+import {
+  PAYMENT_RECEIPT_MIGRATION_STATEMENTS,
+  PAYMENT_RECEIPT_MIGRATION_VERSION,
+} from './migrations/012-payment-receipt';
 
 const DATABASE_NAME = 'sports_school';
 interface DatabaseMigration {
@@ -103,6 +107,10 @@ const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
   {
     version: ATHLETE_IDENTIFICATION_MIGRATION_VERSION,
     statements: ATHLETE_IDENTIFICATION_MIGRATION_STATEMENTS,
+  },
+  {
+    version: PAYMENT_RECEIPT_MIGRATION_VERSION,
+    statements: PAYMENT_RECEIPT_MIGRATION_STATEMENTS,
   },
 ];
 const CURRENT_DATABASE_VERSION =

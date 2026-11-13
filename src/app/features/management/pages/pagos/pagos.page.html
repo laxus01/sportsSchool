@@ -100,6 +100,16 @@
                     type="button"
                     fill="clear"
                     size="small"
+                    (click)="openReceipt(payment)"
+                    aria-label="Ver e imprimir recibo"
+                  >
+                    <ion-icon slot="start" [icon]="icons.printOutline"></ion-icon>
+                    Recibo
+                  </ion-button>
+                  <ion-button
+                    type="button"
+                    fill="clear"
+                    size="small"
                     (click)="openEditPayment(payment)"
                     aria-label="Editar pago"
                   >
@@ -347,6 +357,98 @@
           }
         </form>
       </main>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<ion-modal
+  [isOpen]="isReceiptModalOpen()"
+  (didDismiss)="closeReceipt()"
+>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-button
+            type="button"
+            fill="clear"
+            (click)="closeReceipt()"
+            aria-label="Cerrar recibo"
+          >
+            <ion-icon slot="icon-only" [icon]="icons.chevronBackOutline"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+        <ion-title>Recibo de pago</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="app-page">
+      @if (receipt(); as paymentReceipt) {
+        <article class="receipt-document app-card">
+          <header class="receipt-heading">
+            <p class="section-kicker">COMPROBANTE DE PAGO</p>
+            <h1>{{ paymentReceipt.escuela }}</h1>
+            <p>NIT: {{ paymentReceipt.nit || 'No registrado' }}</p>
+            <strong>No. {{ formatReceiptNumber(paymentReceipt.consecutivo_recibo) }}</strong>
+          </header>
+          <section class="receipt-payer">
+            <p><span>Deportista</span><strong>{{ paymentReceipt.deportista }}</strong></p>
+            <p><span>Fecha de pago</span><strong>{{ formatReceiptDate(paymentReceipt.fecha_pago) }}</strong></p>
+            <p><span>Medio de pago</span><strong>{{ paymentReceipt.medio_pago }}</strong></p>
+          </section>
+          <section class="receipt-concepts">
+            <h2>Detalle de lo cancelado</h2>
+            @for (concept of paymentReceipt.conceptos; track $index) {
+              <div class="receipt-concept-row">
+                <span>{{ formatReceiptConcept(concept.descripcion) }}</span>
+                <strong>{{ formatAmount(concept.monto_pesos) }}</strong>
+              </div>
+            } @empty {
+              <p class="app-muted">No hay conceptos asociados a este pago.</p>
+            }
+            <div class="receipt-total">
+              <span>Total recibido</span>
+              <strong>{{ formatAmount(paymentReceipt.monto_pesos) }}</strong>
+            </div>
+          </section>
+          <p class="receipt-thanks">Gracias por su pago.</p>
+          @if (receiptError()) {
+            <p class="form-error" role="alert">{{ receiptError() }}</p>
+          }
+          <div class="receipt-actions">
+            <ion-button
+              type="button"
+              fill="clear"
+              (click)="closeReceipt()"
+            >
+              Cerrar
+            </ion-button>
+            <ion-button
+              type="button"
+              fill="outline"
+              [disabled]="!receipt() || isSharingReceipt()"
+              (click)="shareReceipt()"
+            >
+              <ion-icon slot="start" [icon]="icons.shareOutline"></ion-icon>
+              {{ isSharingReceipt() ? 'Abriendo…' : 'Compartir por WhatsApp' }}
+            </ion-button>
+            <ion-button
+              type="button"
+              [disabled]="!receipt()"
+              (click)="printReceipt()"
+            >
+              <ion-icon slot="start" [icon]="icons.printOutline"></ion-icon>
+              Imprimir recibo
+            </ion-button>
+          </div>
+        </article>
+      } @else if (receiptError()) {
+        <section class="receipt-document app-card" role="alert">
+          <p class="form-error">{{ receiptError() }}</p>
+          <ion-button type="button" fill="clear" (click)="closeReceipt()">
+            Cerrar
+          </ion-button>
+        </section>
+      }
     </ion-content>
   </ng-template>
 </ion-modal>

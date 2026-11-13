@@ -1,20 +1,32 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Capacitor } from '@capacitor/core';
 import { SQLiteDBConnection } from '@capacitor-community/sqlite';
+import { Share } from '@capacitor/share';
 import { RouterModule } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DatabaseService } from '../../../../database/database.service';
 import { ManagementModule } from '../../management.module';
+import { PaymentReceiptImageService } from './payment-receipt-image.service';
 import { PagosPage } from './pagos.page';
+
+vi.mock('@capacitor/share', () => ({
+  Share: { share: vi.fn() },
+}));
 
 describe('PagosPage', () => {
   let fixture: ComponentFixture<PagosPage>;
   let connection: SQLiteDBConnection;
   let nextId: number;
   let freshPendingRows: Array<Record<string, unknown>>;
+  let createReceiptPng: ReturnType<typeof vi.fn>;
+  let deleteReceiptPng: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     nextId = 0;
+    vi.mocked(Share.share).mockReset();
+    createReceiptPng = vi.fn(async () => 'file:///cache/recibo-42.png');
+    deleteReceiptPng = vi.fn(async () => undefined);
     freshPendingRows = [
       {
         id: 'monthly-1',
@@ -44,6 +56,23 @@ describe('PagosPage', () => {
         if (statement.includes("'mensualidad' AS tipo")) {
           return { values: freshPendingRows };
         }
+        if (statement.includes('FROM escuela')) {
+          return {
+            values: [
+              {
+                nombre: 'Escuela Deportiva',
+                identificacion_fiscal: '900123456-7',
+              },
+            ],
+          };
+        }
+        if (statement.includes('FROM pago_mensualidad pm')) {
+          return {
+            values: [
+              { descripcion: 'Mensualidad 2026-11', monto_pesos: 30000 },
+            ],
+          };
+        }
         return { values: [] };
       }),
       run: vi.fn(async () => ({})),
@@ -56,6 +85,13 @@ describe('PagosPage', () => {
           provide: DatabaseService,
           useValue: { getConnection: async () => connection },
         },
+        {
+          provide: PaymentReceiptImageService,
+          useValue: {
+            createPng: createReceiptPng,
+            deletePng: deleteReceiptPng,
+          },
+        },
       ],
     }).compileComponents();
 
@@ -66,6 +102,7 @@ describe('PagosPage', () => {
   afterEach(() => {
     TestBed.resetTestingModule();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('keeps the financial summary on its dedicated page', () => {
@@ -91,10 +128,139 @@ describe('PagosPage', () => {
     );
   });
 
+  it('pads receipt numbers to six digits', () => {
+    expect(fixture.componentInstance.formatReceiptNumber(42)).toBe('000042');
+  });
+
+  it('formats receipt dates and monthly concepts for display', () => {
+    const page = fixture.componentInstance;
+
+    expect(page.formatReceiptDate('2026-11-12')).toBe('12/11/2026');
+    expect(page.formatReceiptConcept('Mensualidad 2026-11')).toBe(
+      'Mensualidad Noviembre 2026',
+    );
+  });
+
+  it('uses the requested date and month formats in web share text', async () => {
+    const page = fixture.componentInstance;
+    page.receipt.set({
+      consecutivo_recibo: 42,
+      fecha_pago: '2026-11-12',
+      medio_pago: 'Efectivo',
+      deportista: 'Lucía Pérez',
+      escuela: 'Escuela Deportiva',
+      nit: '900123456-7',
+      conceptos: [
+        { descripcion: 'Mensualidad 2026-11', monto_pesos: 30000 },
+      ],
+      monto_pesos: 30000,
+    });
+    vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('web');
+    vi.mocked(Share.share).mockResolvedValueOnce({});
+
+    await page.shareReceipt();
+
+    const sharedText = vi.mocked(Share.share).mock.calls[0][0].text ?? '';
+    expect(sharedText).toContain('Fecha: 12/11/2026');
+    expect(sharedText).toContain('* Mensualidad Noviembre 2026:');
+    expect(createReceiptPng).not.toHaveBeenCalled();
+    expect(deleteReceiptPng).not.toHaveBeenCalled();
+  });
+
+  it('loads school data and applied amounts into a receipt', async () => {
+    const page = fixture.componentInstance;
+
+    await page.openReceipt({
+      id: 'payment-1',
+      consecutivo_recibo: 42,
+      fecha_pago: '2026-11-05',
+      monto_pesos: 30000,
+      medio_pago: 'efectivo',
+      entidad: null,
+      referencia: null,
+      observacion: null,
+      deportistas: 'Lucía Pérez',
+      periodos: '2026-11',
+      estado: 'registrado',
+      motivo_anulacion: null,
+    });
+
+    expect(page.receipt()).toEqual({
+      consecutivo_recibo: 42,
+      fecha_pago: '2026-11-05',
+      medio_pago: 'Efectivo',
+      deportista: 'Lucía Pérez',
+      escuela: 'Escuela Deportiva',
+      nit: '900123456-7',
+      conceptos: [
+        { descripcion: 'Mensualidad 2026-11', monto_pesos: 30000 },
+      ],
+      monto_pesos: 30000,
+    });
+    expect(page.isReceiptModalOpen()).toBe(true);
+  });
+
+  it('shares a PNG receipt so the user can select WhatsApp', async () => {
+    const page = fixture.componentInstance;
+    const receipt = {
+      consecutivo_recibo: 42,
+      fecha_pago: '2026-11-05',
+      medio_pago: 'Efectivo',
+      deportista: 'Lucía Pérez',
+      escuela: 'Escuela Deportiva',
+      nit: '900123456-7',
+      conceptos: [
+        { descripcion: 'Mensualidad 2026-11', monto_pesos: 30000 },
+      ],
+      monto_pesos: 30000,
+    };
+    page.receipt.set(receipt);
+    vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('android');
+    vi.mocked(Share.share).mockResolvedValueOnce({ activityType: 'whatsapp' });
+
+    await page.shareReceipt();
+
+    expect(createReceiptPng).toHaveBeenCalledWith(receipt);
+    expect(deleteReceiptPng).toHaveBeenCalledWith(
+      'file:///cache/recibo-42.png',
+    );
+    expect(Share.share).toHaveBeenCalledWith({
+      title: 'Recibo de pago 000042',
+      files: ['file:///cache/recibo-42.png'],
+      dialogTitle: 'Compartir recibo por WhatsApp',
+    });
+    expect(page.isSharingReceipt()).toBe(false);
+    expect(page.receiptError()).toBe('');
+  });
+
+  it('deletes the temporary PNG when sharing is canceled', async () => {
+    const page = fixture.componentInstance;
+    page.receipt.set({
+      consecutivo_recibo: 42,
+      fecha_pago: '2026-11-12',
+      medio_pago: 'Efectivo',
+      deportista: 'Lucía Pérez',
+      escuela: 'Escuela Deportiva',
+      nit: '900123456-7',
+      conceptos: [],
+      monto_pesos: 30000,
+    });
+    vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('android');
+    vi.mocked(Share.share).mockRejectedValueOnce(new Error('Share canceled'));
+
+    await page.shareReceipt();
+
+    expect(deleteReceiptPng).toHaveBeenCalledWith(
+      'file:///cache/recibo-42.png',
+    );
+    expect(page.isSharingReceipt()).toBe(false);
+  });
+
   it('shows monthly and inscription concepts in separate rows', () => {
     expect(
       fixture.componentInstance.paymentConceptRows({
         id: 'payment-1',
+        consecutivo_recibo: 1,
         fecha_pago: '2026-11-05',
         monto_pesos: 100000,
         medio_pago: 'efectivo',
@@ -117,6 +283,7 @@ describe('PagosPage', () => {
     expect(
       fixture.componentInstance.paymentConceptRows({
         id: 'payment-1',
+        consecutivo_recibo: 1,
         fecha_pago: '2026-11-05',
         monto_pesos: 15000,
         medio_pago: 'efectivo',
@@ -172,6 +339,7 @@ describe('PagosPage', () => {
       expect.stringContaining('INSERT INTO pagos'),
       [
         'payment-test-1',
+        1,
         '2026-11-04',
         30000,
         'efectivo',
@@ -189,6 +357,9 @@ describe('PagosPage', () => {
       false,
     );
     expect(connection.commitTransaction).toHaveBeenCalledOnce();
+    expect(page.receipt()?.consecutivo_recibo).toBe(1);
+    expect(page.receipt()?.deportista).toBe('Lucía Pérez');
+    expect(page.isReceiptModalOpen()).toBe(true);
   });
 
   it('applies a partial payment to an additional charge', async () => {
