@@ -13,6 +13,10 @@ import { BackupFileService } from '../../../../database/backup/backup-file.servi
 import { BackupHistoryService } from '../../../../database/backup/backup-history.service';
 import { BackupShareService } from '../../../../database/backup/backup-share.service';
 import { BackupService } from '../../../../database/backup/backup.service';
+import {
+  BasicDataImportService,
+  BasicImportPreview,
+} from '../../../../database/backup/basic-data-import.service';
 import { BackupValidationService } from '../../../../database/backup/backup-validation.service';
 import { RestoreService } from '../../../../database/backup/restore.service';
 import {
@@ -29,6 +33,8 @@ interface SelectedFile {
   name: string;
   data: Uint8Array;
 }
+
+const MAX_BASIC_IMPORT_BYTES = 5 * 1024 * 1024;
 
 function passwordMatch(
   control: AbstractControl,
@@ -48,6 +54,7 @@ export class RespaldoPage implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly backup = inject(BackupService);
+  private readonly basicDataImport = inject(BasicDataImportService);
   private readonly validation = inject(BackupValidationService);
   private readonly restore = inject(RestoreService);
   private readonly files = inject(BackupFileService);
@@ -58,6 +65,7 @@ export class RespaldoPage implements OnInit {
   readonly isSupported = Capacitor.getPlatform() === 'android';
   readonly backupBusy = this.backup.isBusy;
   readonly restoreBusy = this.restore.isBusy;
+  readonly basicImportBusy = this.basicDataImport.isBusy;
 
   readonly backupForm = new FormGroup(
     {
@@ -88,6 +96,9 @@ export class RespaldoPage implements OnInit {
   readonly isRestoring = signal(false);
   readonly isValidating = signal(false);
   readonly isConfirmAlertOpen = signal(false);
+  readonly isBasicImporting = signal(false);
+  readonly isBasicImportValidating = signal(false);
+  readonly isBasicImportConfirmOpen = signal(false);
 
   readonly lastBackup = signal<LastBackupInfo | null>(null);
   readonly historyEntries = signal<BackupHistoryEntry[]>([]);
@@ -98,6 +109,11 @@ export class RespaldoPage implements OnInit {
   readonly backupSuccess = signal('');
   readonly restoreError = signal('');
   readonly restoreSuccess = signal('');
+  readonly basicImportFileName = signal('');
+  readonly basicImportPreview = signal<BasicImportPreview | null>(null);
+  readonly basicImportError = signal('');
+  readonly basicImportSuccess = signal('');
+  readonly basicImportConfirmMessage = signal('');
 
   readonly confirmAlertButtons = [
     { text: 'Cancelar', role: 'cancel' },
@@ -110,7 +126,19 @@ export class RespaldoPage implements OnInit {
     },
   ];
 
+  readonly basicImportConfirmButtons = [
+    { text: 'Cancelar', role: 'cancel' },
+    {
+      text: 'Agregar datos',
+      role: 'confirm',
+      handler: () => {
+        void this.runBasicImport();
+      },
+    },
+  ];
+
   private validatedPackage: ValidatedBackupPackage | null = null;
+  private basicImportJson: string | null = null;
 
   ngOnInit(): void {
     void this.refreshState();
@@ -184,6 +212,93 @@ export class RespaldoPage implements OnInit {
       this.restoreError.set(this.translateError(this.errorCode(error)));
     } finally {
       this.isValidating.set(false);
+    }
+  }
+
+  async onBasicImportFilePicked(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) {
+      return;
+    }
+    this.basicImportJson = null;
+    this.basicImportFileName.set(file.name);
+    this.basicImportPreview.set(null);
+    this.basicImportError.set('');
+    this.basicImportSuccess.set('');
+    if (!file.name.toLowerCase().endsWith('.json')) {
+      this.basicImportError.set('Selecciona un archivo con extensión .json.');
+      return;
+    }
+    if (file.size > MAX_BASIC_IMPORT_BYTES) {
+      this.basicImportError.set('El archivo supera el límite de 5 MB.');
+      return;
+    }
+
+    this.isBasicImportValidating.set(true);
+    try {
+      const json = await file.text();
+      const preview = await this.basicDataImport.preview(json);
+      this.basicImportJson = json;
+      this.basicImportPreview.set(preview);
+    } catch (error) {
+      this.basicImportError.set(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo validar el archivo JSON.',
+      );
+    } finally {
+      this.isBasicImportValidating.set(false);
+    }
+  }
+
+  askToImportBasicData(): void {
+    const preview = this.basicImportPreview();
+    if (
+      !this.basicImportJson ||
+      !preview?.puedeImportar ||
+      this.isBasicImporting()
+    ) {
+      return;
+    }
+    this.basicImportConfirmMessage.set(
+      `Se agregarán ${preview.deportistasNuevos} deportistas, ` +
+        `${preview.acudientesNuevos} acudientes y ` +
+        `${preview.relacionesNuevas} vínculos. Los registros existentes ` +
+        'no se reemplazarán ni se modificarán.',
+    );
+    this.isBasicImportConfirmOpen.set(true);
+  }
+
+  async runBasicImport(): Promise<void> {
+    if (!this.basicImportJson || this.isBasicImporting()) {
+      return;
+    }
+    this.isBasicImporting.set(true);
+    this.basicImportError.set('');
+    this.basicImportSuccess.set('');
+    try {
+      const result = await this.basicDataImport.import(this.basicImportJson);
+      this.basicImportSuccess.set(
+        `Carga completada: ${result.deportistasAgregados} deportistas, ` +
+          `${result.acudientesAgregados} acudientes y ` +
+          `${result.relacionesAgregadas} vínculos agregados. ` +
+          `Se conservaron sin cambios ${result.deportistasExistentes} ` +
+          'deportistas y ' +
+          `${result.acudientesExistentes} acudientes que ya existían.`,
+      );
+      this.basicImportJson = null;
+      this.basicImportPreview.set(null);
+    } catch (error) {
+      this.basicImportError.set(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo importar el archivo.',
+      );
+    } finally {
+      this.isBasicImporting.set(false);
+      this.isBasicImportConfirmOpen.set(false);
     }
   }
 

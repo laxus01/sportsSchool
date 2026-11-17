@@ -295,6 +295,118 @@
         </ion-accordion>
       </ion-accordion-group>
     }
+
+    <ion-accordion-group class="backup-accordions">
+      <ion-accordion value="basic-import" class="app-card backup-accordion">
+        <ion-item
+          slot="header"
+          lines="none"
+          class="backup-accordion-header"
+        >
+          <div class="backup-section-heading">
+            <h2>Cargar deportistas y acudientes</h2>
+            <p>
+              Agrega información básica desde un archivo JSON sin reemplazar los
+              datos que ya existen.
+            </p>
+          </div>
+        </ion-item>
+
+        <div slot="content" class="backup-accordion-content">
+          <p class="app-muted">
+            Los registros con documentos ya registrados se conservarán sin
+            cambios. Se crearán únicamente los vínculos que todavía no existan.
+          </p>
+          <p class="app-muted">
+            Las categorías y entidades de salud deben existir en sus catálogos.
+            Esta carga no reemplaza esos catálogos ni genera pagos o mensualidades.
+          </p>
+
+          <input
+            #basicImportPicker
+            type="file"
+            accept=".json,application/json"
+            hidden
+            (change)="onBasicImportFilePicked($event)"
+          />
+
+          <ion-button
+            type="button"
+            fill="outline"
+            [disabled]="
+              isBasicImportValidating() ||
+              isBasicImporting() ||
+              basicImportBusy()
+            "
+            (click)="basicImportPicker.click()"
+          >
+            {{
+              isBasicImportValidating()
+                ? 'Validando archivo…'
+                : 'Seleccionar archivo JSON'
+            }}
+          </ion-button>
+
+          @if (basicImportFileName()) {
+            <div class="backup-file-info">
+              <p class="backup-file-name">{{ basicImportFileName() }}</p>
+            </div>
+          }
+
+          @if (basicImportPreview(); as preview) {
+            <div class="backup-file-info" aria-live="polite">
+              <p>
+                {{ preview.deportistas }} deportistas ·
+                {{ preview.acudientes }} acudientes ·
+                {{ preview.relaciones }} vínculos
+              </p>
+              <p class="app-muted">
+                Nuevos: {{ preview.deportistasNuevos }} deportistas,
+                {{ preview.acudientesNuevos }} acudientes y
+                {{ preview.relacionesNuevas }} vínculos.
+              </p>
+              <p class="app-muted">
+                Existentes que se conservarán:
+                {{ preview.deportistasExistentes }} deportistas,
+                {{ preview.acudientesExistentes }} acudientes y
+                {{ preview.relacionesExistentes }} vínculos.
+              </p>
+            </div>
+
+            @if (preview.problemas.length > 0) {
+              <ul class="form-error" role="alert">
+                @for (problem of preview.problemas; track problem) {
+                  <li>{{ problem }}</li>
+                }
+              </ul>
+            }
+
+            @if (isBasicImporting()) {
+              <ion-progress-bar type="indeterminate"></ion-progress-bar>
+            }
+
+            <ion-button
+              type="button"
+              [disabled]="
+                !preview.puedeImportar ||
+                isBasicImporting() ||
+                basicImportBusy()
+              "
+              (click)="askToImportBasicData()"
+            >
+              {{ isBasicImporting() ? 'Cargando datos…' : 'Importar datos' }}
+            </ion-button>
+          }
+
+          @if (basicImportError()) {
+            <p class="form-error" role="alert">{{ basicImportError() }}</p>
+          }
+          @if (basicImportSuccess()) {
+            <p class="form-success" role="status">{{ basicImportSuccess() }}</p>
+          }
+        </div>
+      </ion-accordion>
+    </ion-accordion-group>
   </main>
 </ion-content>
 
@@ -304,4 +416,12 @@
   message="Se reemplazará toda la información actual con el contenido del respaldo. Esta acción no se puede deshacer desde la app, aunque se creará una copia preventiva automática."
   [buttons]="confirmAlertButtons"
   (didDismiss)="isConfirmAlertOpen.set(false)"
+></ion-alert>
+
+<ion-alert
+  [isOpen]="isBasicImportConfirmOpen()"
+  header="Confirmar carga de datos"
+  [message]="basicImportConfirmMessage()"
+  [buttons]="basicImportConfirmButtons"
+  (didDismiss)="isBasicImportConfirmOpen.set(false)"
 ></ion-alert>
