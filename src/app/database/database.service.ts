@@ -56,6 +56,14 @@ import {
   PAYMENT_RECEIPT_MIGRATION_STATEMENTS,
   PAYMENT_RECEIPT_MIGRATION_VERSION,
 } from './migrations/012-payment-receipt';
+import {
+  STATIC_HEALTH_ENTITIES_MIGRATION_STATEMENTS,
+  STATIC_HEALTH_ENTITIES_MIGRATION_VERSION,
+} from './migrations/013-static-health-entities';
+import {
+  CLEAN_HEALTH_ENTITIES_MIGRATION_STATEMENTS,
+  CLEAN_HEALTH_ENTITIES_MIGRATION_VERSION,
+} from './migrations/014-clean-health-entities';
 
 const DATABASE_NAME = 'sports_school';
 interface DatabaseMigration {
@@ -111,6 +119,14 @@ const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
   {
     version: PAYMENT_RECEIPT_MIGRATION_VERSION,
     statements: PAYMENT_RECEIPT_MIGRATION_STATEMENTS,
+  },
+  {
+    version: STATIC_HEALTH_ENTITIES_MIGRATION_VERSION,
+    statements: STATIC_HEALTH_ENTITIES_MIGRATION_STATEMENTS,
+  },
+  {
+    version: CLEAN_HEALTH_ENTITIES_MIGRATION_VERSION,
+    statements: CLEAN_HEALTH_ENTITIES_MIGRATION_STATEMENTS,
   },
 ];
 const CURRENT_DATABASE_VERSION =
