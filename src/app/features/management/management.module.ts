@@ -6,6 +6,7 @@ import { IonicModule } from '@ionic/angular/lazy';
 import { ManagementRoutingModule } from './management-routing.module';
 import { DateInputComponent } from './components/date-input/date-input.component';
 import { MoneyInputComponent } from './components/money-input/money-input.component';
+import { UppercaseInputDirective } from './components/uppercase-input.directive';
 import { AcudienteFormPage } from './pages/acudientes/acudiente-form.page';
 import { AcudientesPage } from './pages/acudientes/acudientes.page';
 import { DeportistaFormPage } from './pages/deportistas/deportista-form.page';
@@ -32,6 +33,7 @@ import { ResumenFinanzasPage } from './pages/resumen-finanzas/resumen-finanzas.p
     ManagementPage,
     DateInputComponent,
     MoneyInputComponent,
+    UppercaseInputDirective,
     MediosPagoPage,
     MedioPagoFormPage,
     PagosPage,

@@ -20,9 +20,87 @@ describe('LicenseWriteAccessService', () => {
     const connection = createConnection();
     const guarded = access.guardConnection(connection);
 
-    await guarded.run('INSERT INTO deportistas (id) VALUES (?)', ['athlete-1']);
+    await guarded.run(
+      `INSERT INTO deportistas
+        (id, categoria_id, nombres, apellidos, tipo_documento,
+         numero_documento, fecha_ingreso, estado)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        'athlete-1',
+        'category-1',
+        'José María',
+        'Pérez Gómez',
+        'cc',
+        'ab-123',
+        '2026-01-01',
+        'activo',
+      ],
+    );
 
     expect(connection.run).toHaveBeenCalledOnce();
+    expect(connection.run).toHaveBeenCalledWith(
+      expect.any(String),
+      [
+        'athlete-1',
+        'category-1',
+        'JOSÉ MARÍA',
+        'PÉREZ GÓMEZ',
+        'CC',
+        'AB-123',
+        '2026-01-01',
+        'activo',
+      ],
+    );
+  });
+
+  it('uppercases editable text on updates but preserves row identifiers', async () => {
+    const access = new LicenseWriteAccessService();
+    const connection = createConnection();
+    const guarded = access.guardConnection(connection);
+
+    await guarded.run(
+      `UPDATE pagos
+       SET referencia = ?, observacion = ?
+       WHERE id = ?`,
+      ['ref abc', 'pago de matrícula', 'payment-1'],
+    );
+
+    expect(connection.run).toHaveBeenCalledWith(
+      expect.any(String),
+      ['REF ABC', 'PAGO DE MATRÍCULA', 'payment-1'],
+    );
+  });
+
+  it('normalizes execute sets without changing credentials or system values', async () => {
+    const access = new LicenseWriteAccessService();
+    const connection = createConnection();
+    const guarded = access.guardConnection(connection);
+
+    await guarded.executeSet([
+      {
+        statement:
+          'INSERT INTO escuela (id, nombre, direccion) VALUES (?, ?, ?)',
+        values: [1, 'escuela del valle', 'calle 10'],
+      },
+      {
+        statement:
+          'INSERT INTO usuarios (id, nombre_usuario, hash_clave) VALUES (?, ?, ?)',
+        values: ['user-1', 'coach', 'lowercase-hash'],
+      },
+    ]);
+
+    expect(connection.executeSet).toHaveBeenCalledWith([
+      {
+        statement:
+          'INSERT INTO escuela (id, nombre, direccion) VALUES (?, ?, ?)',
+        values: [1, 'ESCUELA DEL VALLE', 'CALLE 10'],
+      },
+      {
+        statement:
+          'INSERT INTO usuarios (id, nombre_usuario, hash_clave) VALUES (?, ?, ?)',
+        values: ['user-1', 'coach', 'lowercase-hash'],
+      },
+    ]);
   });
 
   it('blocks mutating methods before reaching SQLite when access is denied', () => {

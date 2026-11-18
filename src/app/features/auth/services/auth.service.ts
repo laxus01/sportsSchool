@@ -332,7 +332,7 @@ export class AuthService {
   }
 
   private normalizeUsername(username: string): string {
-    return username.trim();
+    return username.trim().toLocaleUpperCase('es');
   }
 
   private validateUsername(username: string): void {

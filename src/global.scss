@@ -18,6 +18,11 @@
 @use './app/features/management/pages/pagos/pagos.page';
 @use './app/features/management/components/date-input/date-input.global';
 
+ion-input.uppercase-text::part(native),
+ion-textarea.uppercase-text::part(native) {
+  text-transform: uppercase;
+}
+
 .page-action-fab {
   transform: scale(0.6);
   transform-origin: top right;

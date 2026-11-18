@@ -141,7 +141,7 @@ describe('AuthService', () => {
     await auth.createInitialAccount('  coach  ', password);
 
     expect(users).toHaveLength(1);
-    expect(users[0].nombre_usuario).toBe('coach');
+    expect(users[0].nombre_usuario).toBe('COACH');
     expect(users[0].hash_clave).not.toBe(password);
     expect(users[0].salt).toBeTruthy();
     expect(users[0].iteraciones).toBe(600_000);
@@ -150,7 +150,7 @@ describe('AuthService', () => {
     expect(await auth.login('COACH', 'incorrecta')).toBe(false);
     expect(await auth.login(' COACH ', password)).toBe(true);
     expect(auth.isAuthenticated).toBe(true);
-    expect(auth.currentUsername).toBe('coach');
+    expect(auth.currentUsername).toBe('COACH');
   });
 
   it('restores a remembered session and clears it when logging out', async () => {
@@ -160,13 +160,13 @@ describe('AuthService', () => {
     await auth.createInitialAccount('coach', password);
     await auth.logout();
     expect(await auth.login('coach', password, true)).toBe(true);
-    expect(rememberedUsername).toBe('coach');
+    expect(rememberedUsername).toBe('COACH');
 
     const restartedAuth = TestBed.runInInjectionContext(
       () => new AuthService(),
     );
     expect(await restartedAuth.restoreSession()).toBe(true);
-    expect(restartedAuth.currentUsername).toBe('coach');
+    expect(restartedAuth.currentUsername).toBe('COACH');
 
     await restartedAuth.logout();
     expect(rememberedUsername).toBeNull();
@@ -192,9 +192,9 @@ describe('AuthService', () => {
 
     await auth.changeUsername(password, 'new-coach');
 
-    expect(users[0].nombre_usuario).toBe('new-coach');
-    expect(auth.currentUsername).toBe('new-coach');
-    expect(rememberedUsername).toBe('new-coach');
+    expect(users[0].nombre_usuario).toBe('NEW-COACH');
+    expect(auth.currentUsername).toBe('NEW-COACH');
+    expect(rememberedUsername).toBe('NEW-COACH');
   });
 
   it('rejects a username change when the current password is incorrect', async () => {
@@ -204,7 +204,7 @@ describe('AuthService', () => {
     await expect(
       auth.changeUsername('incorrecta', 'new-coach'),
     ).rejects.toBeInstanceOf(InvalidCurrentPasswordError);
-    expect(users[0].nombre_usuario).toBe('coach');
+    expect(users[0].nombre_usuario).toBe('COACH');
   });
 
   it('changes the password without storing the password in preferences', async () => {
@@ -218,7 +218,7 @@ describe('AuthService', () => {
     await auth.changePassword(currentPassword, newPassword);
 
     expect(users[0].hash_clave).not.toBe(currentPassword);
-    expect(rememberedUsername).toBe('coach');
+    expect(rememberedUsername).toBe('COACH');
     expect(rememberedUsername).not.toBe(newPassword);
 
     await auth.logout();
